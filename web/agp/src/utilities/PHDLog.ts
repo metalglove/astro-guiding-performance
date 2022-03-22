@@ -1,12 +1,12 @@
 interface GuidingFrame {
   frame: number;
   timeInMilliseconds: number;
-  datetime: Date; // based on previous date + time
+  datetime: Date;
   mount: string; // MOUNT or DROP?
-  dx: number;
-  dy: number;
-  RARawDistance: number;
-  DECRawDistance: number;
+  dx: number; // camera axes
+  dy: number; // camera axes
+  RARawDistance: number; // mount axes
+  DECRawDistance: number; // mount axes
   RAGuideDistance: number;
   DECGuideDistance: number;
   RADuration: number;
@@ -314,7 +314,7 @@ class PHDLog {
     this._guidingSessions = [];
   }
 
-  public addGuidingSession(guidingSession: GuidingSession) {
+  public addGuidingSession(guidingSession: GuidingSession): void {
     this._guidingSessions = this._guidingSessions.concat(guidingSession);
   }
 }
