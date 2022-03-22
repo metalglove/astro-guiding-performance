@@ -1,0 +1,10 @@
+{
+  "cSpell.words": [
+    "Autorun",
+    "autoruns",
+    "datetime",
+    "Pierside",
+    "vuex"
+  ],
+  "typescript.tsdk": "node_modules/typescript/lib"
+}
