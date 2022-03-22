@@ -1,0 +1,515 @@
+Log enabled at 2022/03/18 21:13:02
+2022/03/18 21:13:02 Plan M31 Start
+2022/03/18 21:13:02 [Autorun|Begin] M45 Start
+2022/03/18 21:13:03 [Guide] Stop Guiding
+2022/03/18 21:13:03 [AutoCenter|Begin] Auto-Center 1#
+2022/03/18 21:13:03 Mount slews to target position: RA:3h48m19s DEC:+24°11'3"
+2022/03/18 21:13:13 Exposure 1.0s
+2022/03/18 21:13:18 Plate Solve
+2022/03/18 21:13:21 Solve succeeded: RA:3h48m51s DEC:+24°9'26" Angle = -175.366, Star number = 298
+2022/03/18 21:13:21 [AutoCenter|End] Too far from center, distance = 8%(0.123773°)
+2022/03/18 21:13:22 [AutoCenter|Begin] Auto-Center 2#
+2022/03/18 21:13:22 Mount slews to target position: RA:3h48m19s DEC:+24°11'3"
+2022/03/18 21:13:32 Exposure 1.0s
+2022/03/18 21:13:37 Plate Solve
+2022/03/18 21:13:39 Solve succeeded: RA:3h48m24s DEC:+24°10'55" Angle = -175.314, Star number = 292
+2022/03/18 21:13:39 [AutoCenter|End] The target is centered
+2022/03/18 21:13:39 Start Tracking
+2022/03/18 21:13:42 [Guide] ReSelect Guide star
+2022/03/18 21:13:43 [Guide] Start Guiding
+2022/03/18 21:13:47 [Guide] Guide Settle
+2022/03/18 21:14:10 [Guide] Settle Done
+2022/03/18 21:14:10 Shooting 60 light frames, exposure 120.0s Bin1
+2022/03/18 21:14:10 Start Tracking
+2022/03/18 21:14:10 [Guide] Stop Guiding
+2022/03/18 21:14:10 [AutoFocus|Begin] Run AF before Autorun start, exposure 1.0s Bin1, temperature 18.4℃
+2022/03/18 21:14:10 Find Focus Star
+2022/03/18 21:14:20 Find Focus Star: detect and calculate star size 5.4 ,  EAF position 9713
+2022/03/18 21:14:20 Find Focus Star: finding appropriate stars star size 5.4
+2022/03/18 21:14:37 Find Focus Star: detect and calculate star size 7.8 ,  EAF position 9863
+2022/03/18 21:14:37 Calculate V-Curve
+2022/03/18 21:14:47 Calculate V-Curve: detect and calculate star size 7.7 ,  EAF position 9863
+2022/03/18 21:14:57 Calculate V-Curve: detect and calculate star size 6.4 ,  EAF position 9833
+2022/03/18 21:15:07 Calculate V-Curve: detect and calculate star size 5.1 ,  EAF position 9803
+2022/03/18 21:15:18 Calculate V-Curve: detect and calculate star size 4.3 ,  EAF position 9773
+2022/03/18 21:15:29 Calculate V-Curve: detect and calculate star size 4.1 ,  EAF position 9743
+2022/03/18 21:15:39 Calculate V-Curve: detect and calculate star size 4.5 ,  EAF position 9713
+2022/03/18 21:15:50 Calculate V-Curve: detect and calculate star size 5.4 ,  EAF position 9683
+2022/03/18 21:16:00 Calculate V-Curve: detect and calculate star size 6.8 ,  EAF position 9653
+2022/03/18 21:16:10 Calculate V-Curve: detect and calculate star size 8.4 ,  EAF position 9623
+2022/03/18 21:16:18 Find Focus Point
+2022/03/18 21:16:27 Calculate Focus Point: detect and calculate star size 5.5 ,  EAF position 9807
+2022/03/18 21:16:38 Calculate Focus Point: detect and calculate star size 4.8 ,  EAF position 9792
+2022/03/18 21:16:48 Calculate Focus Point: detect and calculate star size 4.8 ,  EAF position 9777
+2022/03/18 21:16:59 Calculate Focus Point: detect and calculate star size 4.0 ,  EAF position 9762
+2022/03/18 21:16:59 Auto focus succeeded, the focused position is 9762
+2022/03/18 21:16:59 [AutoFocus|End] Auto focus succeeded
+2022/03/18 21:17:05 [Guide] ReSelect Guide star
+2022/03/18 21:17:07 [Guide] Start Guiding
+2022/03/18 21:17:11 [Guide] Guide Settle
+2022/03/18 21:17:14 [Guide] Settle Done
+2022/03/18 21:17:14 Exposure 120.0s image 1#
+2022/03/18 21:19:20 Exposure 120.0s image 2#
+2022/03/18 21:21:26 Exposure 120.0s image 3#
+2022/03/18 21:23:32 Exposure 120.0s image 4#
+2022/03/18 21:25:38 Exposure 120.0s image 5#
+2022/03/18 21:27:44 Exposure 120.0s image 6#
+2022/03/18 21:29:50 Exposure 120.0s image 7#
+2022/03/18 21:31:56 Exposure 120.0s image 8#
+2022/03/18 21:34:02 Exposure 120.0s image 9#
+2022/03/18 21:36:08 Exposure 120.0s image 10#
+2022/03/18 21:38:14 Exposure 120.0s image 11#
+2022/03/18 21:40:19 Exposure 120.0s image 12#
+2022/03/18 21:42:25 Exposure 120.0s image 13#
+2022/03/18 21:44:31 Exposure 120.0s image 14#
+2022/03/18 21:46:37 Exposure 120.0s image 15#
+2022/03/18 21:48:43 Exposure 120.0s image 16#
+2022/03/18 21:50:49 Exposure 120.0s image 17#
+2022/03/18 21:52:55 Exposure 120.0s image 18#
+2022/03/18 21:55:01 Exposure 120.0s image 19#
+2022/03/18 21:57:07 Exposure 120.0s image 20#
+2022/03/18 21:59:13 Exposure 120.0s image 21#
+2022/03/18 22:01:18 Exposure 120.0s image 22#
+2022/03/18 22:03:24 Exposure 120.0s image 23#
+2022/03/18 22:03:27 Stop Autorun Manually
+2022/03/18 22:03:31 [Guide] Stop Guiding
+2022/03/18 22:03:31 Stop Tracking
+2022/03/18 22:03:31 [Autorun|End] Pause Autorun
+2022/03/18 22:03:31 Pause Plan M31
+Log disabled at 2022/03/18 22:03:31
+Log enabled at 2022/03/18 22:08:55
+2022/03/18 22:08:55 Plan M31 Start
+2022/03/18 22:08:55 [Autorun|Begin] M106 Start
+2022/03/18 22:08:55 [AutoCenter|Begin] Auto-Center 1#
+2022/03/18 22:08:55 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/18 22:09:06 Exposure 1.0s
+2022/03/18 22:09:10 Plate Solve
+2022/03/18 22:09:13 Solve succeeded: RA:12h20m34s DEC:+47°16'14" Angle = 2.91898, Star number = 112
+2022/03/18 22:09:13 [AutoCenter|End] Too far from center, distance = 8%(0.121973°)
+2022/03/18 22:09:14 [AutoCenter|Begin] Auto-Center 2#
+2022/03/18 22:09:14 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/18 22:09:26 Exposure 1.0s
+2022/03/18 22:09:30 Plate Solve
+2022/03/18 22:09:33 Solve succeeded: RA:12h20m14s DEC:+47°13'0" Angle = 2.97684, Star number = 117
+2022/03/18 22:09:33 [AutoCenter|End] The target is centered
+2022/03/18 22:09:33 Start Tracking
+2022/03/18 22:09:36 [Guide] ReSelect Guide star
+2022/03/18 22:09:37 [Guide] Start Guiding
+2022/03/18 22:09:39 [Guide] Guide Settle
+2022/03/18 22:09:44 [Guide] Settle Done
+2022/03/18 22:09:44 Shooting 200 light frames, exposure 120.0s Bin1
+2022/03/18 22:09:45 Start Tracking
+2022/03/18 22:09:45 [Guide] Stop Guiding
+2022/03/18 22:09:45 [AutoFocus|Begin] Run AF before Autorun start, exposure 1.0s Bin1, temperature 18.1℃
+2022/03/18 22:09:45 Find Focus Star
+2022/03/18 22:09:54 Find Focus Star: detect and calculate star size 4.1 ,  EAF position 9762
+2022/03/18 22:09:54 Find Focus Star: finding appropriate stars star size 4.1
+2022/03/18 22:10:11 Find Focus Star: detect and calculate star size 10.0 ,  EAF position 9912
+2022/03/18 22:10:11 Calculate V-Curve
+2022/03/18 22:10:21 Calculate V-Curve: detect and calculate star size 9.8 ,  EAF position 9912
+2022/03/18 22:10:32 Calculate V-Curve: detect and calculate star size 8.8 ,  EAF position 9882
+2022/03/18 22:10:41 Calculate V-Curve: detect and calculate star size 7.3 ,  EAF position 9852
+2022/03/18 22:10:51 Calculate V-Curve: detect and calculate star size 6.0 ,  EAF position 9822
+2022/03/18 22:11:01 Calculate V-Curve: detect and calculate star size 4.7 ,  EAF position 9792
+2022/03/18 22:11:11 Calculate V-Curve: detect and calculate star size 4.0 ,  EAF position 9762
+2022/03/18 22:11:22 Calculate V-Curve: detect and calculate star size 4.3 ,  EAF position 9702
+2022/03/18 22:11:32 Calculate V-Curve: detect and calculate star size 5.4 ,  EAF position 9672
+2022/03/18 22:11:42 Calculate V-Curve: detect and calculate star size 6.4 ,  EAF position 9642
+2022/03/18 22:11:52 Calculate V-Curve: detect and calculate star size 8.2 ,  EAF position 9612
+2022/03/18 22:11:59 Find Focus Point
+2022/03/18 22:12:08 Calculate Focus Point: detect and calculate star size 5.1 ,  EAF position 9802
+2022/03/18 22:12:18 Calculate Focus Point: detect and calculate star size 5.1 ,  EAF position 9787
+2022/03/18 22:12:28 Calculate Focus Point: detect and calculate star size 4.5 ,  EAF position 9772
+2022/03/18 22:12:38 Calculate Focus Point: detect and calculate star size 4.1 ,  EAF position 9757
+2022/03/18 22:12:38 Auto focus succeeded, the focused position is 9757
+2022/03/18 22:12:38 [AutoFocus|End] Auto focus succeeded
+2022/03/18 22:12:41 [Guide] ReSelect Guide star
+2022/03/18 22:12:42 [Guide] Start Guiding
+2022/03/18 22:12:46 [Guide] Guide Settle
+2022/03/18 22:12:49 [Guide] Settle Done
+2022/03/18 22:12:49 Exposure 120.0s image 1#
+2022/03/18 22:14:56 Exposure 120.0s image 2#
+2022/03/18 22:17:02 Exposure 120.0s image 3#
+2022/03/18 22:19:08 Exposure 120.0s image 4#
+2022/03/18 22:21:14 Exposure 120.0s image 5#
+2022/03/18 22:23:20 Exposure 120.0s image 6#
+2022/03/18 22:25:26 Exposure 120.0s image 7#
+2022/03/18 22:27:31 Exposure 120.0s image 8#
+2022/03/18 22:29:38 Exposure 120.0s image 9#
+2022/03/18 22:31:43 Exposure 120.0s image 10#
+2022/03/18 22:33:50 Exposure 120.0s image 11#
+2022/03/18 22:35:55 Exposure 120.0s image 12#
+2022/03/18 22:38:01 Exposure 120.0s image 13#
+2022/03/18 22:40:07 Exposure 120.0s image 14#
+2022/03/18 22:42:13 Exposure 120.0s image 15#
+2022/03/18 22:44:19 Exposure 120.0s image 16#
+2022/03/18 22:46:25 Exposure 120.0s image 17#
+2022/03/18 22:48:30 Exposure 120.0s image 18#
+2022/03/18 22:50:36 Exposure 120.0s image 19#
+2022/03/18 22:52:43 Exposure 120.0s image 20#
+2022/03/18 22:54:48 Exposure 120.0s image 21#
+2022/03/18 22:56:54 Exposure 120.0s image 22#
+2022/03/18 22:59:00 Exposure 120.0s image 23#
+2022/03/18 23:01:06 Exposure 120.0s image 24#
+2022/03/18 23:03:12 Exposure 120.0s image 25#
+2022/03/18 23:05:18 Exposure 120.0s image 26#
+2022/03/18 23:07:24 Exposure 120.0s image 27#
+2022/03/18 23:09:30 Exposure 120.0s image 28#
+2022/03/18 23:11:36 Exposure 120.0s image 29#
+2022/03/18 23:13:42 Start Tracking
+2022/03/18 23:13:42 [Guide] Stop Guiding
+2022/03/18 23:13:43 [AutoFocus|Begin] Run AF 1 hours later, exposure 1.0s Bin1, temperature 17.8℃
+2022/03/18 23:13:43 Find Focus Star
+2022/03/18 23:13:58 Find Focus Star: detect and calculate star size 3.9 ,  EAF position 9757
+2022/03/18 23:13:58 Find Focus Star: finding appropriate stars star size 3.9
+2022/03/18 23:14:14 Find Focus Star: detect and calculate star size 9.7 ,  EAF position 9907
+2022/03/18 23:14:14 Calculate V-Curve
+2022/03/18 23:14:23 Calculate V-Curve: detect and calculate star size 9.5 ,  EAF position 9907
+2022/03/18 23:14:34 Calculate V-Curve: detect and calculate star size 8.1 ,  EAF position 9877
+2022/03/18 23:14:44 Calculate V-Curve: detect and calculate star size 6.8 ,  EAF position 9847
+2022/03/18 23:14:54 Calculate V-Curve: detect and calculate star size 5.6 ,  EAF position 9817
+2022/03/18 23:15:04 Calculate V-Curve: detect and calculate star size 4.3 ,  EAF position 9787
+2022/03/18 23:15:14 Calculate V-Curve: detect and calculate star size 3.7 ,  EAF position 9727
+2022/03/18 23:15:24 Calculate V-Curve: detect and calculate star size 4.5 ,  EAF position 9697
+2022/03/18 23:15:34 Calculate V-Curve: detect and calculate star size 5.4 ,  EAF position 9667
+2022/03/18 23:15:45 Calculate V-Curve: detect and calculate star size 7.5 ,  EAF position 9637
+2022/03/18 23:15:54 Calculate V-Curve: detect and calculate star size 8.6 ,  EAF position 9607
+2022/03/18 23:16:02 Find Focus Point
+2022/03/18 23:16:11 Calculate Focus Point: detect and calculate star size 5.0 ,  EAF position 9808
+2022/03/18 23:16:21 Calculate Focus Point: detect and calculate star size 4.6 ,  EAF position 9793
+2022/03/18 23:16:31 Calculate Focus Point: detect and calculate star size 4.3 ,  EAF position 9778
+2022/03/18 23:16:41 Calculate Focus Point: detect and calculate star size 3.9 ,  EAF position 9763
+2022/03/18 23:16:41 Auto focus succeeded, the focused position is 9763
+2022/03/18 23:16:41 [AutoFocus|End] Auto focus succeeded
+2022/03/18 23:16:44 [Guide] ReSelect Guide star
+2022/03/18 23:16:45 [Guide] Start Guiding
+2022/03/18 23:16:49 [Guide] Guide Settle
+2022/03/18 23:16:52 [Guide] Settle Done
+2022/03/18 23:16:52 Exposure 120.0s image 30#
+2022/03/18 23:18:58 Exposure 120.0s image 31#
+2022/03/18 23:21:04 Exposure 120.0s image 32#
+2022/03/18 23:23:10 Exposure 120.0s image 33#
+2022/03/18 23:25:16 Exposure 120.0s image 34#
+2022/03/18 23:27:22 Exposure 120.0s image 35#
+2022/03/18 23:29:28 Exposure 120.0s image 36#
+2022/03/18 23:31:34 Exposure 120.0s image 37#
+2022/03/18 23:33:40 Exposure 120.0s image 38#
+2022/03/18 23:35:46 Exposure 120.0s image 39#
+2022/03/18 23:37:52 Exposure 120.0s image 40#
+2022/03/18 23:39:57 Exposure 120.0s image 41#
+2022/03/18 23:42:04 Exposure 120.0s image 42#
+2022/03/18 23:44:10 Exposure 120.0s image 43#
+2022/03/18 23:46:16 Exposure 120.0s image 44#
+2022/03/18 23:48:21 Exposure 120.0s image 45#
+2022/03/18 23:50:27 Exposure 120.0s image 46#
+2022/03/18 23:52:33 Exposure 120.0s image 47#
+2022/03/18 23:54:39 Exposure 120.0s image 48#
+2022/03/18 23:56:45 Exposure 120.0s image 49#
+2022/03/18 23:58:51 Exposure 120.0s image 50#
+2022/03/19 00:00:57 Exposure 120.0s image 51#
+2022/03/19 00:03:03 Exposure 120.0s image 52#
+2022/03/19 00:05:08 Exposure 120.0s image 53#
+2022/03/19 00:07:14 Exposure 120.0s image 54#
+2022/03/19 00:09:20 Exposure 120.0s image 55#
+2022/03/19 00:11:26 Exposure 120.0s image 56#
+2022/03/19 00:13:32 Exposure 120.0s image 57#
+2022/03/19 00:15:38 Exposure 120.0s image 58#
+2022/03/19 00:17:44 Start Tracking
+2022/03/19 00:17:44 [Guide] Stop Guiding
+2022/03/19 00:17:44 [AutoFocus|Begin] Run AF 1 hours later, exposure 1.0s Bin1, temperature 17.3℃
+2022/03/19 00:17:44 Find Focus Star
+2022/03/19 00:17:59 Find Focus Star: detect and calculate star size 4.1 ,  EAF position 9763
+2022/03/19 00:17:59 Find Focus Star: finding appropriate stars star size 4.1
+2022/03/19 00:18:15 Find Focus Star: detect and calculate star size 8.8 ,  EAF position 9913
+2022/03/19 00:18:15 Calculate V-Curve
+2022/03/19 00:18:24 Calculate V-Curve: detect and calculate star size 9.8 ,  EAF position 9913
+2022/03/19 00:18:34 Calculate V-Curve: detect and calculate star size 7.6 ,  EAF position 9883
+2022/03/19 00:18:44 Calculate V-Curve: detect and calculate star size 7.0 ,  EAF position 9853
+2022/03/19 00:18:54 Calculate V-Curve: detect and calculate star size 6.0 ,  EAF position 9823
+2022/03/19 00:19:04 Calculate V-Curve: detect and calculate star size 4.5 ,  EAF position 9793
+2022/03/19 00:19:14 Calculate V-Curve: detect and calculate star size 4.1 ,  EAF position 9763
+2022/03/19 00:19:24 Calculate V-Curve: detect and calculate star size 3.7 ,  EAF position 9733
+2022/03/19 00:19:34 Calculate V-Curve: detect and calculate star size 3.9 ,  EAF position 9703
+2022/03/19 00:19:44 Calculate V-Curve: detect and calculate star size 5.2 ,  EAF position 9673
+2022/03/19 00:19:54 Calculate V-Curve: detect and calculate star size 6.8 ,  EAF position 9643
+2022/03/19 00:20:04 Calculate V-Curve: detect and calculate star size 8.4 ,  EAF position 9613
+2022/03/19 00:20:11 Find Focus Point
+2022/03/19 00:20:20 Calculate Focus Point: detect and calculate star size 5.5 ,  EAF position 9808
+2022/03/19 00:20:31 Calculate Focus Point: detect and calculate star size 4.9 ,  EAF position 9793
+2022/03/19 00:20:42 Calculate Focus Point: detect and calculate star size 4.1 ,  EAF position 9778
+2022/03/19 00:20:51 Calculate Focus Point: detect and calculate star size 4.2 ,  EAF position 9763
+2022/03/19 00:20:51 Auto focus succeeded, the focused position is 9763
+2022/03/19 00:20:52 [AutoFocus|End] Auto focus succeeded
+2022/03/19 00:20:55 [Guide] ReSelect Guide star
+2022/03/19 00:20:56 [Guide] Start Guiding
+2022/03/19 00:20:58 [Guide] Guide Settle
+2022/03/19 00:21:03 [Guide] Settle Done
+2022/03/19 00:21:03 Exposure 120.0s image 59#
+2022/03/19 00:23:09 Exposure 120.0s image 60#
+2022/03/19 00:25:15 Exposure 120.0s image 61#
+2022/03/19 00:27:21 Exposure 120.0s image 62#
+2022/03/19 00:29:27 Exposure 120.0s image 63#
+2022/03/19 00:31:33 Exposure 120.0s image 64#
+2022/03/19 00:33:39 Exposure 120.0s image 65#
+2022/03/19 00:35:45 Exposure 120.0s image 66#
+2022/03/19 00:37:51 Exposure 120.0s image 67#
+2022/03/19 00:39:57 Exposure 120.0s image 68#
+2022/03/19 00:42:02 Exposure 120.0s image 69#
+2022/03/19 00:44:08 Exposure 120.0s image 70#
+2022/03/19 00:46:14 Exposure 120.0s image 71#
+2022/03/19 00:48:20 Exposure 120.0s image 72#
+2022/03/19 00:50:26 Exposure 120.0s image 73#
+2022/03/19 00:52:32 Exposure 120.0s image 74#
+2022/03/19 00:54:38 Exposure 120.0s image 75#
+2022/03/19 00:56:44 Exposure 120.0s image 76#
+2022/03/19 00:58:50 Exposure 120.0s image 77#
+2022/03/19 01:00:56 Exposure 120.0s image 78#
+2022/03/19 01:03:02 Exposure 120.0s image 79#
+2022/03/19 01:05:08 [Guide] Stop Guiding
+2022/03/19 01:05:08 Stop Tracking
+2022/03/19 01:05:08 [Meridian Flip|Begin] Wait 11min54s to Meridian Flip
+2022/03/19 01:17:02 Meridian Flip 1# Start
+2022/03/19 01:17:10 Solve succeeded: RA:12h32m9s DEC:+47°12'44" Angle = 4.22589, Star number = 127
+2022/03/19 01:17:10 [AutoCenter|Begin] Auto-Center 1#
+2022/03/19 01:17:10 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/19 01:17:23 Exposure 1.0s
+2022/03/19 01:17:28 Plate Solve
+2022/03/19 01:17:30 Solve succeeded: RA:12h22m53s DEC:+60°55'27" Angle = 3.55844, Star number = 138
+2022/03/19 01:17:30 [AutoCenter|End] Too far from center, distance = 907%(13.7466°)
+2022/03/19 01:17:31 [AutoCenter|Begin] Auto-Center 2#
+2022/03/19 01:17:31 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/19 01:17:44 Exposure 1.0s
+2022/03/19 01:17:49 Plate Solve
+2022/03/19 01:17:51 Solve succeeded: RA:12h5m42s DEC:+49°57'57" Angle = 4.01991, Star number = 118
+2022/03/19 01:17:51 [AutoCenter|End] Too far from center, distance = 241%(3.65662°)
+2022/03/19 01:17:52 [AutoCenter|Begin] Auto-Center 3#
+2022/03/19 01:17:52 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/19 01:18:04 Exposure 1.0s
+2022/03/19 01:18:09 Plate Solve
+2022/03/19 01:18:12 Solve succeeded: RA:12h22m39s DEC:+46°29'38" Angle = 4.36051, Star number = 121
+2022/03/19 01:18:12 [AutoCenter|End] Too far from center, distance = 54%(0.820594°)
+2022/03/19 01:18:13 [AutoCenter|Begin] Auto-Center 4#
+2022/03/19 01:18:13 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/19 01:18:23 Exposure 1.0s
+2022/03/19 01:18:28 Plate Solve
+2022/03/19 01:18:30 Solve succeeded: RA:12h19m39s DEC:+47°19'44" Angle = 3.17692, Star number = 120
+2022/03/19 01:18:31 [AutoCenter|End] Too far from center, distance = 10%(0.160408°)
+2022/03/19 01:18:32 [AutoCenter|Begin] Auto-Center 5#
+2022/03/19 01:18:32 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/19 01:18:42 Exposure 1.0s
+2022/03/19 01:18:47 Plate Solve
+2022/03/19 01:18:49 Solve succeeded: RA:12h19m59s DEC:+47°10'49" Angle = 3.05854, Star number = 124
+2022/03/19 01:18:50 Pierside is wrong
+2022/03/19 01:18:50 [AutoCenter|End] The target is centered
+2022/03/19 01:18:50 Meridian Flip 1# failed
+2022/03/19 01:18:50 Wait 1min to Meridian Flip
+2022/03/19 01:19:50 Meridian Flip 2# Start
+2022/03/19 01:19:57 Solve succeeded: RA:12h20m0s DEC:+47°10'48" Angle = 3.03839, Star number = 125
+2022/03/19 01:19:57 [AutoCenter|Begin] Auto-Center 1#
+2022/03/19 01:19:57 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/19 01:20:09 Exposure 1.0s
+2022/03/19 01:20:14 Plate Solve
+2022/03/19 01:20:16 Solve succeeded: RA:12h19m36s DEC:+47°16'30" Angle = 3.14465, Star number = 125
+2022/03/19 01:20:16 [AutoCenter|End] Too far from center, distance = 7%(0.118955°)
+2022/03/19 01:20:17 [AutoCenter|Begin] Auto-Center 2#
+2022/03/19 01:20:17 Mount slews to target position: RA:12h20m3s DEC:+47°11'1"
+2022/03/19 01:20:29 Exposure 1.0s
+2022/03/19 01:20:34 Plate Solve
+2022/03/19 01:20:37 Solve succeeded: RA:12h20m2s DEC:+47°10'20" Angle = 3.07486, Star number = 135
+2022/03/19 01:20:37 Pierside is wrong
+2022/03/19 01:20:37 [AutoCenter|End] The target is centered
+2022/03/19 01:20:37 Meridian Flip 2# failed
+2022/03/19 01:20:37 Wait 1min to Meridian Flip
+2022/03/19 01:20:41 Stop Autorun Manually
+2022/03/19 01:20:41 [Meridian Flip|End] The target is centered, Meridian Flip failed
+2022/03/19 01:20:41 Start Tracking
+2022/03/19 01:20:41 [Guide] ReSelect Guide star
+2022/03/19 01:20:43 [Guide] Start Guiding
+2022/03/19 01:20:43 [Guide] Select Guide Star failed, no star found
+2022/03/19 01:20:43 Stop Tracking
+2022/03/19 01:20:43 [Autorun|End] Pause Autorun
+2022/03/19 01:20:43 Pause Plan M31
+Log disabled at 2022/03/19 01:20:43
+Log enabled at 2022/03/19 01:26:33
+2022/03/19 01:26:33 [Autorun|Begin] Moon Start
+2022/03/19 01:26:33 Target RA:12h17m21s DEC:-0°37'55"
+2022/03/19 01:26:33 Shooting 60 flat frames, auto-exposure Bin1
+2022/03/19 01:26:40 [Autorun|End] Pause Autorun
+Log disabled at 2022/03/19 01:26:40
+Log enabled at 2022/03/19 01:27:22
+2022/03/19 01:27:22 [Autorun|Begin] Moon Start
+2022/03/19 01:27:22 Target RA:12h17m37s DEC:-0°39'24"
+2022/03/19 01:27:22 Shooting 60 flat frames, auto-exposure Bin1
+2022/03/19 01:27:29 [Autorun|End] Pause Autorun
+Log disabled at 2022/03/19 01:27:29
+Log enabled at 2022/03/19 01:27:44
+2022/03/19 01:27:44 [Autorun|Begin] Moon Start
+2022/03/19 01:27:45 Target RA:12h17m45s DEC:-0°40'5"
+2022/03/19 01:27:45 Shooting 60 flat frames, auto-exposure Bin1
+2022/03/19 01:27:52 [Autorun|End] Pause Autorun
+Log disabled at 2022/03/19 01:27:52
+Log enabled at 2022/03/19 01:28:10
+2022/03/19 01:28:10 [Autorun|Begin] Moon Start
+2022/03/19 01:28:10 Target RA:12h17m54s DEC:-0°40'52"
+2022/03/19 01:28:10 Shooting 60 flat frames, auto-exposure Bin1
+2022/03/19 01:28:17 [Autorun|End] Pause Autorun
+Log disabled at 2022/03/19 01:28:17
+Log enabled at 2022/03/19 01:29:10
+2022/03/19 01:29:10 [Autorun|Begin] Moon Start
+2022/03/19 01:29:11 Target RA:12h18m13s DEC:-0°42'42"
+2022/03/19 01:29:11 Shooting 60 flat frames, auto-exposure Bin1
+2022/03/19 01:29:17 [Autorun|End] Pause Autorun
+Log disabled at 2022/03/19 01:29:17
+Log enabled at 2022/03/19 01:30:55
+2022/03/19 01:30:55 [Autorun|Begin] Moon Start
+2022/03/19 01:30:55 Target RA:12h18m48s DEC:-0°45'53"
+2022/03/19 01:30:55 Shooting 60 flat frames, auto-exposure Bin1
+2022/03/19 01:31:11 Exposure 1.9s image 1#
+2022/03/19 01:31:17 Exposure 1.9s image 2#
+2022/03/19 01:31:25 Exposure 1.9s image 3#
+2022/03/19 01:31:34 Exposure 1.9s image 4#
+2022/03/19 01:31:43 Exposure 1.9s image 5#
+2022/03/19 01:31:52 Exposure 1.9s image 6#
+2022/03/19 01:31:59 Exposure 1.9s image 7#
+2022/03/19 01:32:07 Exposure 1.9s image 8#
+2022/03/19 01:32:14 Exposure 1.9s image 9#
+2022/03/19 01:32:23 Exposure 1.9s image 10#
+2022/03/19 01:32:30 Exposure 1.9s image 11#
+2022/03/19 01:32:39 Exposure 1.9s image 12#
+2022/03/19 01:32:46 Exposure 1.9s image 13#
+2022/03/19 01:32:55 Exposure 1.9s image 14#
+2022/03/19 01:33:02 Exposure 1.9s image 15#
+2022/03/19 01:33:09 Exposure 1.9s image 16#
+2022/03/19 01:33:17 Exposure 1.9s image 17#
+2022/03/19 01:33:24 Exposure 1.9s image 18#
+2022/03/19 01:33:32 Exposure 1.9s image 19#
+2022/03/19 01:33:39 Exposure 1.9s image 20#
+2022/03/19 01:33:46 Exposure 1.9s image 21#
+2022/03/19 01:33:53 Exposure 1.9s image 22#
+2022/03/19 01:34:02 Exposure 1.9s image 23#
+2022/03/19 01:34:09 Exposure 1.9s image 24#
+2022/03/19 01:34:18 Exposure 1.9s image 25#
+2022/03/19 01:34:25 Exposure 1.9s image 26#
+2022/03/19 01:34:33 Exposure 1.9s image 27#
+2022/03/19 01:34:40 Exposure 1.9s image 28#
+2022/03/19 01:34:49 Exposure 1.9s image 29#
+2022/03/19 01:34:56 Exposure 1.9s image 30#
+2022/03/19 01:35:03 Exposure 1.9s image 31#
+2022/03/19 01:35:12 Exposure 1.9s image 32#
+2022/03/19 01:35:19 Exposure 1.9s image 33#
+2022/03/19 01:35:28 Exposure 1.9s image 34#
+2022/03/19 01:35:35 Exposure 1.9s image 35#
+2022/03/19 01:35:42 Exposure 1.9s image 36#
+2022/03/19 01:35:50 Exposure 1.9s image 37#
+2022/03/19 01:35:57 Exposure 1.9s image 38#
+2022/03/19 01:36:06 Exposure 1.9s image 39#
+2022/03/19 01:36:13 Exposure 1.9s image 40#
+2022/03/19 01:36:22 Exposure 1.9s image 41#
+2022/03/19 01:36:30 Exposure 1.9s image 42#
+2022/03/19 01:36:38 Exposure 1.9s image 43#
+2022/03/19 01:36:46 Exposure 1.9s image 44#
+2022/03/19 01:36:53 Exposure 1.9s image 45#
+2022/03/19 01:37:01 Exposure 1.9s image 46#
+2022/03/19 01:37:09 Exposure 1.9s image 47#
+2022/03/19 01:37:17 Exposure 1.9s image 48#
+2022/03/19 01:37:25 Exposure 1.9s image 49#
+2022/03/19 01:37:32 Exposure 1.9s image 50#
+2022/03/19 01:37:39 Exposure 1.9s image 51#
+2022/03/19 01:37:48 Exposure 1.9s image 52#
+2022/03/19 01:37:55 Exposure 1.9s image 53#
+2022/03/19 01:38:03 Exposure 1.9s image 54#
+2022/03/19 01:38:12 Exposure 1.9s image 55#
+2022/03/19 01:38:19 Exposure 1.9s image 56#
+2022/03/19 01:38:27 Exposure 1.9s image 57#
+2022/03/19 01:38:36 Exposure 1.9s image 58#
+2022/03/19 01:38:43 Exposure 1.9s image 59#
+2022/03/19 01:38:50 Exposure 1.9s image 60#
+2022/03/19 01:38:58 [Autorun|End] Finish Autorun
+Log disabled at 2022/03/19 01:38:58
+Log enabled at 2022/03/19 01:54:52
+2022/03/19 01:54:52 [Autorun|Begin] Moon Start
+2022/03/19 01:54:52 Target RA:12h26m23s DEC:-3°10'0"
+2022/03/19 01:54:52 Shooting 30 light frames, exposure 100.0us Bin1
+2022/03/19 01:54:52 Start Tracking
+2022/03/19 01:54:52 [AutoFocus|Begin] Run AF before Autorun start, exposure 1.0s Bin1, temperature 17.0℃
+2022/03/19 01:54:52 Find Focus Star
+2022/03/19 01:54:59 Cancel AF Manually
+2022/03/19 01:55:02 Find Focus Star: detect and calculate star size 19.5 ,  EAF position 9803
+2022/03/19 01:55:03 [AutoFocus|End] Auto focus failed
+2022/03/19 01:55:03 Exposure 100.0us image 1#
+2022/03/19 01:55:08 Exposure 100.0us image 2#
+2022/03/19 01:55:13 Stop Autorun Manually
+2022/03/19 01:55:13 [Autorun|End] Pause Autorun
+Log disabled at 2022/03/19 01:55:13
+Log enabled at 2022/03/19 01:56:18
+2022/03/19 01:56:18 [Autorun|Begin] Moon Start
+2022/03/19 01:56:18 Target RA:12h26m52s DEC:-3°12'45"
+2022/03/19 01:56:18 Shooting 30 light frames, exposure 1.0ms Bin1
+2022/03/19 01:56:18 Exposure 1.0ms image 1#
+2022/03/19 01:56:24 Exposure 1.0ms image 2#
+2022/03/19 01:56:32 Exposure 1.0ms image 3#
+2022/03/19 01:56:41 Exposure 1.0ms image 4#
+2022/03/19 01:56:50 Exposure 1.0ms image 5#
+2022/03/19 01:56:58 Exposure 1.0ms image 6#
+2022/03/19 01:57:08 Exposure 1.0ms image 7#
+2022/03/19 01:57:16 Exposure 1.0ms image 8#
+2022/03/19 01:57:25 Exposure 1.0ms image 9#
+2022/03/19 01:57:33 Exposure 1.0ms image 10#
+2022/03/19 01:57:41 Exposure 1.0ms image 11#
+2022/03/19 01:57:49 Exposure 1.0ms image 12#
+2022/03/19 01:57:58 Exposure 1.0ms image 13#
+2022/03/19 01:58:06 Exposure 1.0ms image 14#
+2022/03/19 01:58:14 Exposure 1.0ms image 15#
+2022/03/19 01:58:22 Exposure 1.0ms image 16#
+2022/03/19 01:58:29 Exposure 1.0ms image 17#
+2022/03/19 01:58:38 Exposure 1.0ms image 18#
+2022/03/19 01:58:47 Exposure 1.0ms image 19#
+2022/03/19 01:58:55 Exposure 1.0ms image 20#
+2022/03/19 01:59:03 Exposure 1.0ms image 21#
+2022/03/19 01:59:12 Exposure 1.0ms image 22#
+2022/03/19 01:59:20 Exposure 1.0ms image 23#
+2022/03/19 01:59:29 Exposure 1.0ms image 24#
+2022/03/19 01:59:37 Exposure 1.0ms image 25#
+2022/03/19 01:59:45 Exposure 1.0ms image 26#
+2022/03/19 01:59:53 Exposure 1.0ms image 27#
+2022/03/19 02:00:01 Exposure 1.0ms image 28#
+2022/03/19 02:00:11 Exposure 1.0ms image 29#
+2022/03/19 02:00:19 Exposure 1.0ms image 30#
+2022/03/19 02:00:27 [Autorun|End] Finish Autorun
+Log disabled at 2022/03/19 02:00:27
+Log enabled at 2022/03/19 02:02:53
+2022/03/19 02:02:53 [Autorun|Begin] Moon Start
+2022/03/19 02:02:53 Target RA:12h29m4s DEC:-3°25'31"
+2022/03/19 02:02:53 Shooting 30 light frames, exposure 100.0us Bin1
+2022/03/19 02:02:53 Exposure 100.0us image 1#
+2022/03/19 02:02:57 Exposure 100.0us image 2#
+2022/03/19 02:03:07 Exposure 100.0us image 3#
+2022/03/19 02:03:15 Exposure 100.0us image 4#
+2022/03/19 02:03:24 Exposure 100.0us image 5#
+2022/03/19 02:03:32 Exposure 100.0us image 6#
+2022/03/19 02:03:40 Exposure 100.0us image 7#
+2022/03/19 02:03:48 Exposure 100.0us image 8#
+2022/03/19 02:03:56 Exposure 100.0us image 9#
+2022/03/19 02:04:04 Exposure 100.0us image 10#
+2022/03/19 02:04:12 Exposure 100.0us image 11#
+2022/03/19 02:04:20 Exposure 100.0us image 12#
+2022/03/19 02:04:28 Exposure 100.0us image 13#
+2022/03/19 02:04:36 Exposure 100.0us image 14#
+2022/03/19 02:04:44 Exposure 100.0us image 15#
+2022/03/19 02:04:51 Exposure 100.0us image 16#
+2022/03/19 02:04:59 Exposure 100.0us image 17#
+2022/03/19 02:05:07 Exposure 100.0us image 18#
+2022/03/19 02:05:16 Exposure 100.0us image 19#
+2022/03/19 02:05:25 Exposure 100.0us image 20#
+2022/03/19 02:05:33 Exposure 100.0us image 21#
+2022/03/19 02:05:41 Exposure 100.0us image 22#
+2022/03/19 02:05:50 Exposure 100.0us image 23#
+2022/03/19 02:05:59 Exposure 100.0us image 24#
+2022/03/19 02:06:07 Exposure 100.0us image 25#
+2022/03/19 02:06:16 Exposure 100.0us image 26#
+2022/03/19 02:06:25 Exposure 100.0us image 27#
+2022/03/19 02:06:33 Exposure 100.0us image 28#
+2022/03/19 02:06:42 Exposure 100.0us image 29#
+2022/03/19 02:06:51 Exposure 100.0us image 30#
+2022/03/19 02:06:59 [Autorun|End] Finish Autorun
+Log disabled at 2022/03/19 02:06:59
