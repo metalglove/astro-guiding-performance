@@ -1,6 +1,22 @@
 <template>
   <div>
     <h1>Guiding Performance charts</h1>
+    <div>
+      <h2>Autorun log details</h2>
+      <b>Log date:</b><br/> {{ autorunLog.datetime }} <br/>
+      <b>Autorun sessions:</b><br/> {{ autorunLog.autoruns.length }} <br/>
+      <b>Targets:</b><br/>
+      <div v-for="autorun in autorunLog.autoruns" v-bind:key="autorun.startTime">
+        <pre> {{ planText(autorun) }} </pre>
+      </div>
+      <h2>PHD2 log details</h2>
+      <b>Mount</b><br/> {{ guidingSession.mount }} <br/>
+      <b>Guiding camera</b><br/> {{ guidingSession.camera }}, Resolution: {{ guidingSession.cameraWidth }}x{{ guidingSession.cameraHeight }}, Pixel size: {{ guidingSession.cameraPixelSize }}um<br/>
+      <b>Guiding scope</b><br/> Focal length: {{ guidingSession.focalLength }}mm <br/>
+      <b>Guide camera settings</b><br/> Binning: {{ guidingSession.binning }}, Gain: {{ guidingSession.cameraGain }}, Exposure time: {{ guidingSession.exposureTime }}ms, Pixel scale: {{ guidingSession.pixelScale }}px <br/>
+      <b>Guiding algorithms</b><br/> X: {{ guidingSession.xGuidingAlgorithm }}, Y: {{ guidingSession.yGuidingAlgorithm }} <br/>
+      <b>Guide settings</b><br/> Backlash compensation: {{ guidingSession.backlashCompensation }}, X-rate: {{ guidingSession.xRate }}, Y-rate: {{ guidingSession.yRate }} <br/>
+    </div>
     <select v-model="selectedScale">
        <option v-for="option in selectOptions" v-bind:key="option.id" v-bind:value="option.value">
         {{ option.value }}
@@ -14,8 +30,9 @@
 <script lang="ts">
 import { defineComponent, ref, computed } from 'vue';
 import { LineChart } from 'vue-chart-3';
-import { AutorunLog } from '../utilities/AutorunLog';
+import { Autorun, AutorunLog, ExposureEvent } from '../utilities/AutorunLog';
 import { GuidingSession, PHDLog } from '../utilities/PHDLog';
+import { groupBy } from '../utilities/helpers';
 
 export default defineComponent({
   name: 'GuidingPerformance',
