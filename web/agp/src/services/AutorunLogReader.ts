@@ -172,6 +172,7 @@ export default class AutorunLogReader {
         currentFrameType = match[1][0].toUpperCase() + match[1].slice(1);
       }
     }
+
     return autorunLog;
   }
 }

@@ -288,7 +288,8 @@ class GuidingSession {
   }
 
   public addGuidingFrame(guidingFrame: GuidingFrame): void {
-    this._guidingFrames = this._guidingFrames.concat(guidingFrame);
+    if (!isNaN(guidingFrame.frame))
+      this._guidingFrames = this._guidingFrames.concat(guidingFrame);
   }
 }
 

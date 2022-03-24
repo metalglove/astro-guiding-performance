@@ -10,16 +10,21 @@
         <pre> {{ planText(autorun) }} </pre>
       </div>
       <h2>PHD2 log details</h2>
-      <b>Mount</b><br/> {{ guidingSession.mount }} <br/>
-      <b>Guiding camera</b><br/> {{ guidingSession.camera }}, Resolution: {{ guidingSession.cameraWidth }}x{{ guidingSession.cameraHeight }}, Pixel size: {{ guidingSession.cameraPixelSize }}um<br/>
-      <b>Guiding scope</b><br/> Focal length: {{ guidingSession.focalLength }}mm <br/>
-      <b>Guide camera settings</b><br/> Binning: {{ guidingSession.binning }}, Gain: {{ guidingSession.cameraGain }}, Exposure time: {{ guidingSession.exposureTime }}ms, Pixel scale: {{ guidingSession.pixelScale }}px <br/>
-      <b>Guiding algorithms</b><br/> X: {{ guidingSession.xGuidingAlgorithm }}, Y: {{ guidingSession.yGuidingAlgorithm }} <br/>
-      <b>Guide settings</b><br/> Backlash compensation: {{ guidingSession.backlashCompensation }}, X-rate: {{ guidingSession.xRate }}, Y-rate: {{ guidingSession.yRate }} <br/>
+      <b>Mount</b><br/> {{ selectedGuidingSession.mount }} <br/>
+      <b>Guiding camera</b><br/> {{ selectedGuidingSession.camera }}, Resolution: {{ selectedGuidingSession.cameraWidth }}x{{ selectedGuidingSession.cameraHeight }}, Pixel size: {{ selectedGuidingSession.cameraPixelSize }}um<br/>
+      <b>Guiding scope</b><br/> Focal length: {{ selectedGuidingSession.focalLength }}mm <br/>
+      <b>Guide camera settings</b><br/> Binning: {{ selectedGuidingSession.binning }}, Gain: {{ selectedGuidingSession.cameraGain }}, Exposure time: {{ selectedGuidingSession.exposureTime }}ms, Pixel scale: {{ selectedGuidingSession.pixelScale }}px <br/>
+      <b>Guiding algorithms</b><br/> X: {{ selectedGuidingSession.xGuidingAlgorithm }}, Y: {{ selectedGuidingSession.yGuidingAlgorithm }} <br/>
+      <b>Guide settings</b><br/> Backlash compensation: {{ selectedGuidingSession.backlashCompensation }}, X-rate: {{ selectedGuidingSession.xRate }}, Y-rate: {{ selectedGuidingSession.yRate }} <br/>
     </div>
     <select v-model="selectedScale">
        <option v-for="option in selectOptions" v-bind:key="option.id" v-bind:value="option.value">
         {{ option.value }}
+      </option>
+    </select>
+    <select v-model="selectedGuidingSession">
+       <option v-for="guidingSession in guidingSessions" v-bind:key="guidingSession.startTime" v-bind:value="guidingSession">
+        {{ guidingSession.startTime }}
       </option>
     </select>
     <LineChart :chartData="cameraAxes" :options="cameraAxesOptions" />
@@ -31,7 +36,7 @@
 import { defineComponent, ref, computed } from 'vue';
 import { LineChart } from 'vue-chart-3';
 import { Autorun, AutorunLog, ExposureEvent } from '../utilities/AutorunLog';
-import { GuidingSession, PHDLog } from '../utilities/PHDLog';
+import { PHDLog } from '../utilities/PHDLog';
 import { groupBy } from '../utilities/helpers';
 
 export default defineComponent({
@@ -45,8 +50,9 @@ export default defineComponent({
   setup(props, { emit }) {
     const logs: { AutorunLog: AutorunLog, PHDLog: PHDLog } = props.logs as { AutorunLog: AutorunLog, PHDLog: PHDLog };
 
-    const guidingSession: GuidingSession = logs.PHDLog.guidingSessions[6];
-    console.log(guidingSession);
+    const selectedGuidingSession = ref(logs.PHDLog.guidingSessions[0]);
+
+    console.log(selectedGuidingSession);
 
     const selectedScale = ref('pixels');
     const selectOptions = [
@@ -102,7 +108,10 @@ export default defineComponent({
             },
             ticks: {
               callback: function(value: any, index: any, ticks: any) {
-                return value + '\"';
+                if (selectedScale.value !== 'pixels')
+                  return Number(value).toFixed(2) + '\"';
+                else
+                  return Number(value).toFixed(2);
               }
             }
           }
@@ -189,17 +198,17 @@ export default defineComponent({
 
       function scaleToPixelScale(x: LocalGuidingFrame[]): LocalGuidingFrame[]  {
         return x.map(x => {
-          x.dx *= guidingSession.pixelScale;
-          x.dy *= guidingSession.pixelScale;
-          x.ra *= guidingSession.pixelScale;
-          x.dec *= guidingSession.pixelScale;
+          x.dx *= selectedGuidingSession.value.pixelScale;
+          x.dy *= selectedGuidingSession.value.pixelScale;
+          x.ra *= selectedGuidingSession.value.pixelScale;
+          x.dec *= selectedGuidingSession.value.pixelScale;
           return x;
         });
       }
     };
 
     const scaledData = computed(() => {
-      let data: LocalGuidingFrame[] = guidingSession.guidingFrames.map((x) => {
+      let data: LocalGuidingFrame[] = selectedGuidingSession.value.guidingFrames.map((x) => {
         return { datetime: x.datetime, dx: x.dx, dy: x.dy, ra: x.RARawDistance, dec: x.DECRawDistance } as LocalGuidingFrame;
         });
       return scale(data);
@@ -284,7 +293,7 @@ export default defineComponent({
       return text;
     }
 
-    return { planText, autorunLog: logs.AutorunLog, guidingSession, selectedScale, selectOptions, cameraAxes, mountAxes, mountAxesOptions, cameraAxesOptions };
+    return { guidingSessions: logs.PHDLog.guidingSessions, planText, autorunLog: logs.AutorunLog, selectedGuidingSession, selectedScale, selectOptions, cameraAxes, mountAxes, mountAxesOptions, cameraAxesOptions };
   },
 });
 </script>

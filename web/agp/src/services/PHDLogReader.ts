@@ -249,7 +249,9 @@ export default class PHDLogReader {
         endGuidingSession();
       } else {
         // add frame to guiding session
-        updateCurrentLine();
+        if (!updateCurrentLine()) {
+          break;
+        }
         // Frame,Time,mount,dx,dy,RARawDistance,DECRawDistance,RAGuideDistance,DECGuideDistance,RADuration,RADirection,DECDuration,DECDirection,XStep,YStep,StarMass,SNR,ErrorCode
         // 1,1.894,"Mount",-0.335,-0.207,-0.348,0.194,-0.219,0.000,522,E,0,,,,1330,25.34,0
 
