@@ -29,6 +29,7 @@ export default class AutorunLogReader {
         return true;
       }
     }
+    let currentFrameType = '';
 
     while (index < lines.length) {
       updateCurrentLine()
@@ -42,7 +43,9 @@ export default class AutorunLogReader {
         currentAutorun = new Autorun(match[1], new Date(currentDateTime));
       } else if (currentLine.startsWith('[Autorun|End]') && currentAutorun !== null) {
         currentAutorun.endTime = new Date(currentDateTime);
-        autorunLog.addAutorun(currentAutorun);
+        if (currentAutorun.exposureEvents.length >= 1) {
+          autorunLog.addAutorun(currentAutorun);
+        }
         currentAutorun = null;
       } else if (currentLine.startsWith('[AutoCenter|Begin]') && currentAutorun !== null) {
         let re = /\[AutoCenter\|Begin\] Auto-Center (.*)\#/g;
@@ -154,9 +157,19 @@ export default class AutorunLogReader {
         const exposure: ExposureEvent = {
           datetime: new Date(currentDateTime),
           integrationTime: match[1],
-          image: parseInt(match[2])
+          image: parseInt(match[2]),
+          type: currentFrameType,
         };
         currentAutorun.addExposureEvent(exposure);
+      } else if (currentLine.startsWith('Shooting') && currentAutorun !== null) {
+        // Shooting 60 light frames, exposure 120.0s Bin1
+        const re = /Shooting (?:.*) (.*) frames, (?:.*)/g;
+        const match = re.exec(currentLine);
+        if (match === null) {
+          throw new Error('Unable to parse Shooting line.');
+        }
+
+        currentFrameType = match[1][0].toUpperCase() + match[1].slice(1);
       }
     }
     return autorunLog;

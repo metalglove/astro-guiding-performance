@@ -7,6 +7,7 @@ interface ExposureEvent {
   integrationTime: string;
   image: number;
   datetime: Date;
+  type: string;
 }
 
 interface AutoCenterEvent {
