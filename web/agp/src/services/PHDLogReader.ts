@@ -1,4 +1,4 @@
-import { PHDLog, GuidingSession, GuidingFrame } from '../utilities/PHDLog';
+import { PHDLog, GuidingSession, GuidingFrame, CalibrationSession, CalibrationStep } from '../utilities/PHDLog';
 
 export default class PHDLogReader {
   public parseText(text: string): PHDLog {
@@ -22,6 +22,71 @@ export default class PHDLogReader {
         currentLine = line;
         return true;
       }
+    }
+
+    function parsePixelScaleLine() {
+      const re = /Pixel scale = (.*) arc-sec\/px, Binning = (.*), Focal length = (.*) mm/g;
+      const match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Pixel line.');
+      }
+      const pixelScale: number = parseFloat(match[1]);
+      const binning: number = parseInt(match[2]);
+      const focalLength: number = parseInt(match[3]);
+      updateCurrentLine();
+      return { pixelScale, binning, focalLength };
+    }
+
+    function parseEquipmentProfileLine(): string {
+      const re = /Equipment Profile = (.*)/g;
+      const match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Equipment Profile line.');
+      }
+      const equipmentProfile: string = match[1];
+      updateCurrentLine();
+      return equipmentProfile;
+    }
+
+    function parseExposureLine(): number {
+      const re = /Exposure = (.*) (?:.*)s/g;
+      const match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Exposure line.');
+      }
+      const exposureTime: number = parseFloat(match[1]);
+      updateCurrentLine();
+      return exposureTime;
+    }
+
+    function parseDecLine() {
+      // Dec = 69.0 deg, Hour angle = -1.78 hr, Pier side = West, Rotator pos = N/A
+      const re = /Dec = (.*) deg, Hour angle = (.*) hr, Pier side = (.*), Rotator pos = (.*)/g;
+      const match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Dec line.');
+      }
+      const degrees: number = parseFloat(match[1]);
+      const hourAngle: number = parseFloat(match[2]);
+      const pierSide: string = match[3];
+      const rotatorPosition: string = match[4];
+      updateCurrentLine();
+      return { degrees, hourAngle, pierSide, rotatorPosition };
+    }
+
+    function parseLockLine() {
+      const re = /Lock position = (.*), (.*), Star position = (.*), (.*), HFD = (.*) px/g;
+      const match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Lock position line.');
+      }
+      const lockPositionX: number = parseFloat(match[1]);
+      const lockPositionY: number = parseFloat(match[2]);
+      const starPositionX: number = parseFloat(match[3]);
+      const starPositionY: number = parseFloat(match[4]);
+      const halfFluxDiameterInPixels: number = parseFloat(match[5]);
+      updateCurrentLine();
+      return { lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels };
     }
 
     function startGuidingSession(): void {
@@ -51,15 +116,8 @@ export default class PHDLogReader {
 
       // 3. pixel scale, binning, focal length
       // Pixel scale = 6.04 arc-sec/px, Binning = 1, Focal length = 128 mm
-      re = /Pixel scale = (.*) arc-sec\/px, Binning = (.*), Focal length = (.*) mm/g;
-      match = re.exec(currentLine);
-      if (match === null) {
-        throw new Error('Unable to parse Pixel line.');
-      }
-      const pixelScale: number = parseFloat(match[1]);
-      const binning: number = parseInt(match[2]);
-      const focalLength: number = parseInt(match[3]);
-      updateCurrentLine();
+
+      const { pixelScale, binning, focalLength } = parsePixelScaleLine();
 
       // 4. search region, star mass tolerance
       // Search region = 50 px, Star mass tolerance = 50.0%
@@ -74,13 +132,7 @@ export default class PHDLogReader {
 
       // 5. Equipment profile?
       // Equipment Profile =
-      re = /Equipment Profile = (.*)/g;
-      match = re.exec(currentLine);
-      if (match === null) {
-        throw new Error('Unable to parse Equipment Profile line.');
-      }
-      const equipmentProfile: string = match[1];
-      updateCurrentLine();
+      const equipmentProfile: string = parseEquipmentProfileLine();
 
       // 6. Camera, gain, resolution, pixel size
       // Camera = ZWO ASI224MC, gain = 300, full size = 1304 x 976, no dark, no defect map, pixel size = 3.8 um
@@ -98,13 +150,7 @@ export default class PHDLogReader {
 
       // 7. Exposure time
       // Exposure = 1000 ms
-      re = /Exposure = (.*) (?:.*)s/g;
-      match = re.exec(currentLine);
-      if (match === null) {
-        throw new Error('Unable to parse Exposure line.');
-      }
-      const exposureTime: number = parseFloat(match[1]);
-      updateCurrentLine();
+      const exposureTime: number = parseExposureLine();
 
       // 8. Mount, xAngle, xRate, yAngle, yRate, parity
       // Mount = Celestron AVX/CGE/CGEM/CGX,  connected, guiding enabled, xAngle = 59.7, xRate = 0.420, yAngle = 148.2, yRate = 1.190, parity = +/+,
@@ -177,30 +223,11 @@ export default class PHDLogReader {
 
       // 13. DEC, hour angle, pier side, rotator pos,
       // Dec = 69.0 deg, Hour angle = -1.78 hr, Pier side = West, Rotator pos = N/A
-      re = /Dec = (.*) deg, Hour angle = (.*) hr, Pier side = (.*), Rotator pos = (.*)/g;
-      match = re.exec(currentLine);
-      if (match === null) {
-        throw new Error('Unable to parse Dec line.');
-      }
-      const degrees: number = parseFloat(match[1]);
-      const hourAngle: number = parseFloat(match[2]);
-      const pierSide: string = match[3];
-      const rotatorPosition: string = match[4];
-      updateCurrentLine();
+      const { degrees, hourAngle, pierSide, rotatorPosition } = parseDecLine();
 
       // 14. Lock position, Star position, HFD
       // Lock position = 462.631, 298.537, Star position = 462.576, 298.547, HFD = 3.30 px
-      re = /Lock position = (.*), (.*), Star position = (.*), (.*), HFD = (.*) px/g;
-      match = re.exec(currentLine);
-      if (match === null) {
-        throw new Error('Unable to parse Lock position line.');
-      }
-      const lockPositionX: number = parseFloat(match[1]);
-      const lockPositionY: number = parseFloat(match[2]);
-      const starPositionX: number = parseFloat(match[3]);
-      const starPositionY: number = parseFloat(match[4]);
-      const halfFluxDiameterInPixels: number = parseFloat(match[5]);
-      updateCurrentLine();
+      const { lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels } = parseLockLine();
 
       currentGuidingSession = new GuidingSession(
         startTime, dither, ditherScale, imageNoiseReduction,
@@ -226,6 +253,114 @@ export default class PHDLogReader {
       updateCurrentLine();
     }
 
+    function parseCalibrationSession(): CalibrationSession {
+
+      // 1. Calibration Begins at 2022-03-27 22:47:47
+      let re = /Calibration Begins at (.*)/g;
+      let match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Calibration Begins line.');
+      }
+      const startTime: Date = new Date(match[1]);
+      updateCurrentLine();
+
+      // 2. Equipment profile
+      // Equipment Profile =
+      const equipmentProfile: string = parseEquipmentProfileLine();
+
+      // 3. Camera
+      // Camera = ZWO ASI224MC
+      re = /Camera = (.*)/g;
+      match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Camera line.');
+      }
+      const camera: string = match[1];
+      updateCurrentLine();
+
+      // 4. Exposure
+      // Exposure = 1000 ms
+      const exposure: number = parseExposureLine();
+
+      // 5. Pixel scale
+      // Pixel scale = 6.04 arc-sec/px, Binning = 1, Focal length = 128 mm
+      const { pixelScale, binning, focalLength } = parsePixelScaleLine();
+
+      // 6. Mount, calib step, assume axes
+      // Mount = Celestron AVX/CGE/CGEM/CGX, Calibration Step = 2000 ms, Assume orthogonal axes = no
+      re = /Mount = (.*), Calibration Step = (.*) ms, Assume orthogonal axes = (.*)/g;
+      match = re.exec(currentLine);
+      if (match === null) {
+        throw new Error('Unable to parse Mount line.');
+      }
+      const mount: string = match[1];
+      const calibrationStep: number = parseInt(match[2]);
+      const assumeOrthogonalAxes: string = match[3];
+      updateCurrentLine();
+
+      // 7. Dec, Hour angle, Pierside, rotator pos
+      // Dec = 41.8 deg, Hour angle = -3.78 hr, Pier side = Unknown, Rotator pos = N/A
+      const { degrees, hourAngle, pierSide, rotatorPosition } = parseDecLine();
+
+      // 8. Lock, star, hfd
+      // Lock position = 615.602, 127.508, Star position = 615.291, 127.665, HFD = 3.60 px
+      const { lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels } = parseLockLine();
+
+      const calibrationSession: CalibrationSession = new CalibrationSession(
+        startTime, camera, equipmentProfile,
+        exposure, pixelScale, binning, focalLength,
+        mount, calibrationStep, assumeOrthogonalAxes,
+        degrees, hourAngle, pierSide, rotatorPosition,
+        lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels
+        );
+
+      // 9. data loop
+      while (!currentLine.startsWith('Calibration')) {
+        updateCurrentLine();
+        if (currentLine.startsWith('West calibration')) {
+          // set west stuff
+          re = /West calibration complete. Angle = (.*) deg, Rate = (.*) px\/sec, Parity = (.*)/g;
+          match = re.exec(currentLine);
+          if (match === null) {
+            throw new Error('Unable to parse West calibration line.');
+          }
+          const westCalibrationAngle: number = parseFloat(match[1]);
+          const westCalibrationRate: number = parseFloat(match[2]);
+          const westCalibrationParity: string = match[3];
+          calibrationSession.setWestCalibrationComplete(westCalibrationAngle, westCalibrationRate, westCalibrationParity);
+          updateCurrentLine();
+        } else if (currentLine.startsWith('North calibration')) {
+          // set west stuff
+          re = /North calibration complete. Angle = (.*) deg, Rate = (.*) px\/sec, Parity = (.*)/g;
+          match = re.exec(currentLine);
+          if (match === null) {
+            throw new Error('Unable to parse North calibration line.');
+          }
+          const northCalibrationAngle: number = parseFloat(match[1]);
+          const northCalibrationRate: number = parseFloat(match[2]);
+          const northCalibrationParity: string = match[3];
+          calibrationSession.setNorthCalibrationComplete(northCalibrationAngle, northCalibrationRate, northCalibrationParity);
+          updateCurrentLine();
+        }
+
+        // Direction,Step,dx,dy,x,y,Dist
+        // West,0,0.000,0.000,615.356,127.540,0.000
+        const cells: string[] = currentLine.split(',');
+        const step: CalibrationStep = {
+          direction: cells[0],
+          step: parseInt(cells[1]),
+          dx: parseFloat(cells[2]),
+          dy: parseFloat(cells[3]),
+          x: parseFloat(cells[4]),
+          y: parseFloat(cells[5]),
+          distance: parseFloat(cells[6]),
+        };
+        calibrationSession.addCalibrationStep(step);
+      }
+      updateCurrentLine();
+      return calibrationSession;
+    }
+
     updateCurrentLine();
 
     const re = /PHD2 version, Log version (.*). Log enabled at (.*)/g;
@@ -247,6 +382,9 @@ export default class PHDLogReader {
         startGuidingSession();
       } else if (currentLine.startsWith('Guiding Ends')) {
         endGuidingSession();
+      } else if (currentLine.startsWith('Calibration Begins')) {
+        const calibrationSession: CalibrationSession = parseCalibrationSession();
+        phdLog.addCalibrationSession(calibrationSession);
       } else {
         // add frame to guiding session
         if (!updateCurrentLine()) {

@@ -20,6 +20,198 @@ interface GuidingFrame {
   ErrorCode: string;
 }
 
+interface CalibrationStep {
+  direction: string;
+  step: number;
+  dx: number;
+  dy: number;
+  x: number;
+  y: number;
+  distance: number;
+}
+
+class CalibrationSession {
+  private _dateTime: Date;
+  private _camera: string;
+  private _equipmentProfile: string;
+  private _exposure: number;
+  private _pixelScale: number;
+  private _binning: number;
+  private _focalLength: number;
+  private _mount: string;
+  private _calibrationStep: number;
+  private _assumeOrthogonalAxes: string;
+  private _calibrationSteps: CalibrationStep[];
+  private _degrees: number;
+  private _hourAngle: number;
+  private _pierSide: string;
+  private _rotatorPosition: string;
+  private _lockPositionX: number;
+  private _lockPositionY: number;
+  private _starPositionX: number;
+  private _starPositionY: number;
+  private _halfFluxDiameterInPixels: number;
+  private _westCalibrationAngle: number;
+  private _westCalibrationRate: number;
+  private _westCalibrationParity: string;
+  private _northCalibrationAngle: number;
+  private _northCalibrationRate: number;
+  private _northCalibrationParity: string;
+
+  public get dateTime(): Date {
+    return this._dateTime;
+  }
+
+  public get camera(): string {
+    return this._camera;
+  }
+
+  public get equipmentProfile(): string {
+    return this._equipmentProfile;
+  }
+
+  public get exposure(): number {
+    return this._exposure;
+  }
+
+  public get pixelScale(): number {
+    return this._pixelScale;
+  }
+
+  public get binning(): number {
+    return this._binning;
+  }
+
+  public get focalLength(): number {
+    return this._focalLength;
+  }
+
+  public get mount(): string {
+    return this._mount;
+  }
+
+  public get calibrationStep(): number {
+    return this._calibrationStep;
+  }
+
+  public get assumeOrthogonalAxes(): string {
+    return this._assumeOrthogonalAxes;
+  }
+
+  public get degrees(): number {
+    return this._degrees;
+  }
+
+  public get hourAngle(): number {
+    return this._hourAngle;
+  }
+
+  public get pierSide(): string {
+    return this._pierSide;
+  }
+
+  public get rotatorPosition(): string {
+    return this._rotatorPosition;
+  }
+
+  public get lockPositionX(): number {
+    return this._lockPositionX;
+  }
+
+  public get lockPositionY(): number {
+    return this._lockPositionY;
+  }
+
+  public get starPositionX(): number {
+    return this._starPositionX;
+  }
+
+  public get starPositionY(): number {
+    return this._starPositionY;
+  }
+
+  public get halfFluxDiameterInPixels(): number {
+    return this._halfFluxDiameterInPixels;
+  }
+
+  public get calibrationSteps(): CalibrationStep[] {
+    return this._calibrationSteps;
+  }
+
+  public get westCalibrationAngle(): number {
+    return this._westCalibrationAngle;
+  }
+
+  public get westCalibrationRate(): number {
+    return this._westCalibrationRate;
+  }
+  public get westCalibrationParity(): string {
+    return this._westCalibrationParity;
+  }
+
+  public get northCalibrationAngle(): number {
+    return this._northCalibrationAngle;
+  }
+
+  public get northCalibrationRate(): number {
+    return this._northCalibrationRate;
+  }
+  public get northCalibrationParity(): string {
+    return this._northCalibrationParity;
+  }
+
+  constructor(
+    dateTime: Date, camera: string, equipmentProfile: string,
+    exposure: number, pixelScale: number, binning: number, focalLength: number,
+    mount: string, calibrationStep: number, assumeOrthogonalAxes: string,
+    degrees: number, hourAngle: number, pierSide: string, rotatorPosition: string,
+    lockPositionX: number, lockPositionY: number, starPositionX: number, starPositionY: number,
+    halfFluxDiameterInPixels: number) {
+    this._dateTime = dateTime;
+    this._camera = camera;
+    this._equipmentProfile = equipmentProfile;
+    this._exposure = exposure;
+    this._pixelScale = pixelScale;
+    this._binning = binning;
+    this._focalLength = focalLength;
+    this._mount = mount;
+    this._calibrationStep = calibrationStep;
+    this._assumeOrthogonalAxes = assumeOrthogonalAxes;
+    this._calibrationSteps = [];
+    this._degrees = degrees;
+    this._hourAngle = hourAngle;
+    this._pierSide = pierSide;
+    this._rotatorPosition = rotatorPosition;
+    this._lockPositionX = lockPositionX;
+    this._lockPositionY = lockPositionY;
+    this._starPositionX = starPositionX;
+    this._starPositionY = starPositionY;
+    this._halfFluxDiameterInPixels = halfFluxDiameterInPixels;
+    this._westCalibrationAngle = 0;
+    this._westCalibrationRate = 0;
+    this._westCalibrationParity = '';
+    this._northCalibrationAngle = 0;
+    this._northCalibrationRate = 0;
+    this._northCalibrationParity = '';
+  }
+
+  public addCalibrationStep(step: CalibrationStep): void {
+    this._calibrationSteps = this._calibrationSteps.concat(step);
+  }
+
+  public setWestCalibrationComplete(angle: number, rate: number, parity: string): void {
+    this._westCalibrationAngle = angle;
+    this._westCalibrationRate = rate;
+    this._westCalibrationParity = parity;
+  }
+
+  public setNorthCalibrationComplete(angle: number, rate: number, parity: string): void {
+    this._northCalibrationAngle = angle;
+    this._northCalibrationRate = rate;
+    this._northCalibrationParity = parity;
+  }
+}
+
 // For more detail on the log:
 // https://openphdguiding.org/man-dev/Advanced_settings.htm
 class GuidingSession {
@@ -309,15 +501,25 @@ class PHDLog {
     return this._guidingSessions;
   }
 
+  private _calibrationSessions: CalibrationSession[];
+  public get calibrationSessions(): CalibrationSession[] {
+    return this._calibrationSessions;
+  }
+
   constructor(phdLogVersion: string, datetime: Date) {
     this._datetime = datetime;
     this._phdLogVersion = phdLogVersion;
     this._guidingSessions = [];
+    this._calibrationSessions = [];
   }
 
   public addGuidingSession(guidingSession: GuidingSession): void {
     this._guidingSessions = this._guidingSessions.concat(guidingSession);
   }
+
+  public addCalibrationSession(calibrationSession: CalibrationSession): void {
+    this._calibrationSessions = this._calibrationSessions.concat(calibrationSession);
+  }
 }
 
-export { PHDLog, GuidingSession, GuidingFrame };
+export { PHDLog, GuidingSession, GuidingFrame, CalibrationSession, CalibrationStep };
