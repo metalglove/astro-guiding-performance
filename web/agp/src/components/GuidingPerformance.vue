@@ -24,7 +24,7 @@
     </select>
     <select v-model="selectedGuidingSession">
        <option v-for="guidingSession in guidingSessions" v-bind:key="guidingSession.startTime" v-bind:value="guidingSession">
-        {{ guidingSession.startTime }}
+        {{ guidingSession.startTime.toLocaleString() + ' ' + timeDifference(guidingSession.startTime, guidingSession.endTime) }}
       </option>
     </select>
     <LineChart :chartData="cameraAxes" :options="cameraAxesOptions" />
@@ -49,7 +49,6 @@ export default defineComponent({
   },
   setup(props, { emit }) {
     const logs: { AutorunLog: AutorunLog, PHDLog: PHDLog } = props.logs as { AutorunLog: AutorunLog, PHDLog: PHDLog };
-
     const selectedGuidingSession = ref(logs.PHDLog.guidingSessions[0]);
 
     console.log(selectedGuidingSession);
@@ -293,7 +292,16 @@ export default defineComponent({
       return text;
     }
 
-    return { guidingSessions: logs.PHDLog.guidingSessions, planText, autorunLog: logs.AutorunLog, selectedGuidingSession, selectedScale, selectOptions, cameraAxes, mountAxes, mountAxesOptions, cameraAxesOptions };
+    function timeDifference(startTime: Date, endTime: Date) {
+      let mills = Math.abs(endTime.getTime() - startTime.getTime()) / 1000;
+      const hours = Math.floor(mills / 3600) % 24;
+      mills -= hours * 3600
+      const minutes = Math.floor(mills / 60) % 60;
+      mills -= minutes * 60;
+      return `(${hours}h ${String(minutes).padStart(2, '0')}m)`;
+    }
+
+    return { timeDifference, guidingSessions: logs.PHDLog.guidingSessions, planText, autorunLog: logs.AutorunLog, selectedGuidingSession, selectedScale, selectOptions, cameraAxes, mountAxes, mountAxesOptions, cameraAxesOptions };
   },
 });
 </script>

@@ -225,6 +225,11 @@ class GuidingSession {
     return this._startTime;
   }
 
+  private _endTime: Date;
+  public get endTime(): Date {
+    return this._endTime;
+  }
+
   private _dither: string;
   public get dither(): string {
     return this._dither;
@@ -438,6 +443,7 @@ class GuidingSession {
     ) {
     this._guidingFrames = [];
     this._startTime = startTime;
+    this._endTime = startTime;
     this._dither = dither;
     this._ditherScale = ditherScale;
     this._imageNoiseReduction = imageNoiseReduction;
@@ -480,8 +486,10 @@ class GuidingSession {
   }
 
   public addGuidingFrame(guidingFrame: GuidingFrame): void {
-    if (!isNaN(guidingFrame.frame))
+    if (!isNaN(guidingFrame.frame)) {
       this._guidingFrames = this._guidingFrames.concat(guidingFrame);
+      this._endTime = guidingFrame.datetime;
+    }
   }
 }
 
