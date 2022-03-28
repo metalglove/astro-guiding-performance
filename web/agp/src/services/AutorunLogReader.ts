@@ -26,6 +26,9 @@ export default class AutorunLogReader {
       } else {
         currentDateTime = line.slice(0, 19);
         currentLine = line.slice(20);
+        if (currentLine.startsWith('Angle')) {
+          return updateCurrentLine();
+        }
         return true;
       }
     }
@@ -38,7 +41,7 @@ export default class AutorunLogReader {
         const match = re.exec(currentLine);
 
         if (match === null) {
-          throw new Error('Unable to parse Autorun plan name.');
+          throw new Error(`Unable to parse Autorun plan name (line: ${index}).`);
         }
         currentAutorun = new Autorun(match[1], new Date(currentDateTime));
       } else if (currentLine.startsWith('[Autorun|End]') && currentAutorun !== null) {
@@ -51,7 +54,7 @@ export default class AutorunLogReader {
         let re = /\[AutoCenter\|Begin\] Auto-Center (.*)\#/g;
         let match = re.exec(currentLine);
         if (match === null) {
-          throw new Error('Unable to parse AutoCenter attempt name.');
+          throw new Error(`Unable to parse AutoCenter attempt name (line: ${index}).`);
         }
         const autoCenterEvent: AutoCenterEvent = {} as AutoCenterEvent;
         autoCenterEvent.attempt = parseInt(match[1]);
@@ -61,7 +64,7 @@ export default class AutorunLogReader {
         re = /Mount slews to target position: RA:(.*) DEC:(.*)/g;
         match = re.exec(currentLine);
         if (match === null) {
-          throw new Error('Unable to parse expected Mount slews line.');
+          throw new Error(`Unable to parse expected Mount slews line (line: ${index}).`);
         }
         autoCenterEvent.targetPosition = { RA: match[1], DEC: match[2] };
 
@@ -70,7 +73,7 @@ export default class AutorunLogReader {
         re = /Solve succeeded: RA:(.*) DEC:(.*) Angle = (.*), Star number = (.*)/g;
         match = re.exec(currentLine);
         if (match === null) {
-          throw new Error('Unable to parse expected Solve succeeded line.');
+          throw new Error(`Unable to parse expected Solve succeeded line (line: ${index}).`);
         }
         autoCenterEvent.solvedPosition = { RA: match[1], DEC: match[2] };
         autoCenterEvent.solvedAngle = parseFloat(match[3]);
@@ -88,7 +91,8 @@ export default class AutorunLogReader {
         re = /\[AutoCenter\|End\] Too far from center, distance = (.*)/g;
         match = re.exec(currentLine);
         if (match === null) {
-          throw new Error('Unable to parse expected AutoCenter End line.');
+          console.log(`"${currentLine}"`);
+          throw new Error(`Unable to parse expected AutoCenter End line (line: ${index}).`);
         } else {
           autoCenterEvent.distanceFromCenter = match[1];
         }
@@ -97,7 +101,7 @@ export default class AutorunLogReader {
         const re = /\[AutoFocus\|Begin\] (?:Run AF before Autorun start|Run AF .* later), exposure (.*), temperature (.*)℃/g;
         const match = re.exec(currentLine);
         if (match === null) {
-          throw new Error('Unable to parse AutoFocus begin line.');
+          throw new Error(`Unable to parse AutoFocus begin line (line: ${index}).`);
         }
         const autoFocusEvent: AutoFocusEvent = {
           startTime: new Date(currentDateTime),
@@ -124,7 +128,7 @@ export default class AutorunLogReader {
             const re = /Calculate V-Curve: detect and calculate star size (.*) ,  EAF position (.*)/g;
             const match = re.exec(currentLine);
             if (match === null) {
-              throw new Error('Unable to parse Calculate V-Curve line.');
+              throw new Error(`Unable to parse Calculate V-Curve line (line: ${index}).`);
             }
             const vCurveMeasurement: VCurveMeasurement = {
               datetime: new Date(currentDateTime),
@@ -140,7 +144,7 @@ export default class AutorunLogReader {
           const re = /Auto focus succeeded, the focused position is (.*)/g;
           const match = re.exec(currentLine);
           if (match === null) {
-            throw new Error('Unable to parse Auto focus succeeded position line.');
+            throw new Error(`Unable to parse Auto focus succeeded position line (line: ${index}).`);
           }
           autoFocusEvent.focusPosition = parseInt(match[1]);
         }
@@ -152,7 +156,7 @@ export default class AutorunLogReader {
         const re = /Exposure (.*) image (.*)\#/g;
         const match = re.exec(currentLine);
         if (match === null) {
-          throw new Error('Unable to parse Exposure line.');
+          throw new Error(`Unable to parse Exposure line (line: ${index}).`);
         }
         const exposure: ExposureEvent = {
           datetime: new Date(currentDateTime),
@@ -166,7 +170,7 @@ export default class AutorunLogReader {
         const re = /Shooting (?:.*) (.*) frames, (?:.*)/g;
         const match = re.exec(currentLine);
         if (match === null) {
-          throw new Error('Unable to parse Shooting line.');
+          throw new Error(`Unable to parse Shooting line (line: ${index}).`);
         }
 
         currentFrameType = match[1][0].toUpperCase() + match[1].slice(1);
