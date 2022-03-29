@@ -91,7 +91,6 @@ export default class AutorunLogReader {
         re = /\[AutoCenter\|End\] Too far from center, distance = (.*)/g;
         match = re.exec(currentLine);
         if (match === null) {
-          console.log(`"${currentLine}"`);
           throw new Error(`Unable to parse expected AutoCenter End line (line: ${index}).`);
         } else {
           autoCenterEvent.distanceFromCenter = match[1];

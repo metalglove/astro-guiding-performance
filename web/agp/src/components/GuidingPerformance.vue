@@ -2,42 +2,33 @@
   <div>
     <h1>Guiding Performance charts</h1>
     <div>
-      <h2>Autorun log details</h2>
-      <b>Log date:</b><br/> {{ autorunLog.datetime }} <br/>
-      <b>Autorun sessions:</b><br/> {{ autorunLog.autoruns.length }} <br/>
-      <b>Targets:</b><br/>
-      <div v-for="autorun in autorunLog.autoruns" v-bind:key="autorun.startTime">
-        <pre> {{ planText(autorun) }} </pre>
-      </div>
-      <h2>PHD2 log details</h2>
-      <b>Mount</b><br/> {{ selectedGuidingSession.mount }} <br/>
-      <b>Guiding camera</b><br/> {{ selectedGuidingSession.camera }}, Resolution: {{ selectedGuidingSession.cameraWidth }}x{{ selectedGuidingSession.cameraHeight }}, Pixel size: {{ selectedGuidingSession.cameraPixelSize }}um<br/>
-      <b>Guiding scope</b><br/> Focal length: {{ selectedGuidingSession.focalLength }}mm <br/>
-      <b>Guide camera settings</b><br/> Binning: {{ selectedGuidingSession.binning }}, Gain: {{ selectedGuidingSession.cameraGain }}, Exposure time: {{ selectedGuidingSession.exposureTime }}ms, Pixel scale: {{ selectedGuidingSession.pixelScale }}px <br/>
-      <b>Guiding algorithms</b><br/> X: {{ selectedGuidingSession.xGuidingAlgorithm }}, Y: {{ selectedGuidingSession.yGuidingAlgorithm }} <br/>
-      <b>Guide settings</b><br/> Backlash compensation: {{ selectedGuidingSession.backlashCompensation }}, X-rate: {{ selectedGuidingSession.xRate }}, Y-rate: {{ selectedGuidingSession.yRate }} <br/>
+      <AutorunLogDetails :autorunLog="autorunLog" />
+      <PHDLogDetails :phdLog="phdLog" @selectedGuidingSessionChanged="updateSelectedGuidingSession"/>
     </div>
-    <select v-model="selectedScale">
-       <option v-for="option in selectOptions" v-bind:key="option.id" v-bind:value="option.value">
+    <br/>
+    Scale: <select v-model="selectedScale" @change="scaleChanged">
+       <option v-for="option in selectScaleOptions" v-bind:key="option.id" v-bind:value="option.value">
         {{ option.value }}
       </option>
     </select>
-    <select v-model="selectedGuidingSession">
-       <option v-for="guidingSession in guidingSessions" v-bind:key="guidingSession.startTime" v-bind:value="guidingSession">
-        {{ guidingSession.startTime.toLocaleString() + ' ' + timeDifference(guidingSession.startTime, guidingSession.endTime) }}
+    <br/>
+    Axes: <select v-model="selectedAxes">
+       <option v-for="option in selectAxesOptions" v-bind:key="option.id" v-bind:value="option.value">
+        {{ option.value.title }}
       </option>
     </select>
-    <LineChart :chartData="cameraAxes" :options="cameraAxesOptions" />
-    <LineChart :chartData="mountAxes" :options="mountAxesOptions" />
+    <LineChart ref="lineChartRef" :chartData="chartData" :options="chartDataOptions" />
+    <ScatterChart class="scatterChart" :chartData="scatterChartData" :options="scatterChartDataOptions" />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed } from 'vue';
-import { LineChart } from 'vue-chart-3';
-import { Autorun, AutorunLog, ExposureEvent } from '../utilities/AutorunLog';
-import { PHDLog } from '../utilities/PHDLog';
-import { groupBy } from '../utilities/helpers';
+import { defineComponent, ref, computed, onMounted } from 'vue';
+import { LineChart, ScatterChart } from 'vue-chart-3';
+import AutorunLogDetails from './AutorunLogDetails.vue';
+import PHDLogDetails from './PHDLogDetails.vue';
+import { AutorunLog } from '../utilities/AutorunLog';
+import { GuidingSession, PHDLog } from '../utilities/PHDLog';
 
 export default defineComponent({
   name: 'GuidingPerformance',
@@ -45,36 +36,167 @@ export default defineComponent({
     logs: Object,
   },
   components: {
-    LineChart
+    AutorunLogDetails,
+    PHDLogDetails,
+    LineChart,
+    ScatterChart
   },
   setup(props, { emit }) {
     const logs: { AutorunLog: AutorunLog, PHDLog: PHDLog } = props.logs as { AutorunLog: AutorunLog, PHDLog: PHDLog };
     const selectedGuidingSession = ref(logs.PHDLog.guidingSessions[0]);
 
-    console.log(selectedGuidingSession);
-
-    const selectedScale = ref('pixels');
-    const selectOptions = [
+    const selectScaleOptions = [
       {
         id: 0,
-        value: 'pixels'
+        value: 'Pixels'
       },
       {
         id: 1,
-        value: 'arc-secs/pixel '
+        value: 'Arc-secs/pixel'
       },
       {
         id: 2,
-        value: 'arc-secs/pixel  RMS (50 sec window)'
+        value: 'Arc-secs/pixel RMS (50 sec window)'
       }];
+    const selectedScale = ref('Pixels');
 
-    const defaultOptions = (title: string) => {
+    const selectAxesOptions = [
+      {
+        id: 0,
+        value: {
+          title: 'Mount',
+          xLabel: 'RA',
+          yLabel: 'DEC'
+        }
+      },
+      {
+        id: 1,
+        value:  {
+          title: 'Camera',
+          xLabel: 'dx',
+          yLabel: 'dy'
+        }
+      }];
+    const selectedAxes = ref(selectAxesOptions[0].value);
+
+    interface LocalGuidingFrame {
+      datetime: Date;
+      x: number;
+      y: number;
+      totalXY: number;
+    }
+
+    const scale = (x: LocalGuidingFrame[]) => {
+      if (selectedScale.value === 'Pixels') {
+        return x;
+      } else if (selectedScale.value === 'Arc-secs/pixel') {
+        return scaleToPixelScale(x);
+      } else if (selectedScale.value === 'Arc-secs/pixel RMS (50 sec window)') {
+        let dataScaledToPixelScale = scaleToPixelScale(x);
+        let newX: LocalGuidingFrame[] = [];
+        const rmsWindow = 50 * 1000; // to milliseconds
+        let lastFrameWindow: Date = dataScaledToPixelScale[0].datetime;
+
+        let currentGuidingFrameWindow: LocalGuidingFrame = {
+          datetime: lastFrameWindow,
+          x: 0,
+          y: 0,
+          totalXY: 0
+        };
+        let counter = 0;
+
+        for (let currentFrame of dataScaledToPixelScale) {
+          counter += 1;
+          if (currentFrame.datetime.valueOf() - lastFrameWindow.valueOf() >= rmsWindow) {
+            currentGuidingFrameWindow.datetime = lastFrameWindow;
+            currentGuidingFrameWindow.x = Math.sqrt(currentGuidingFrameWindow.x / counter);
+            currentGuidingFrameWindow.y = Math.sqrt(currentGuidingFrameWindow.y / counter);
+            currentGuidingFrameWindow.totalXY = (currentGuidingFrameWindow.x + currentGuidingFrameWindow.y) / 2;
+            newX = newX.concat(currentGuidingFrameWindow);
+
+            lastFrameWindow = currentFrame.datetime;
+            currentGuidingFrameWindow = {
+              datetime: lastFrameWindow,
+              x: 0,
+              y: 0,
+              totalXY: 0,
+            };
+            counter = 1;
+          }
+          currentGuidingFrameWindow.x += Math.pow(currentFrame.x, 2);
+          currentGuidingFrameWindow.y += Math.pow(currentFrame.y, 2);
+        }
+        return newX;
+      } else {
+        return [];
+      }
+
+      function scaleToPixelScale(x: LocalGuidingFrame[]): LocalGuidingFrame[]  {
+        return x.map((v) => {
+          return {
+            datetime: v.datetime,
+            x: v.x * selectedGuidingSession.value.pixelScale,
+            y: v.y * selectedGuidingSession.value.pixelScale,
+            totalXY: v.totalXY
+          };
+        });
+      }
+    };
+
+    const data = computed(() => selectedGuidingSession.value.guidingFrames.map((a) => {
+        if (selectedAxes.value.title === 'Mount') {
+          return {
+            datetime: a.datetime,
+            x: a.RARawDistance,
+            y: a.DECRawDistance,
+            totalXY: 0
+          } as LocalGuidingFrame;
+        } else { // (selectedAxes.value === 'Camera') {
+          return {
+            datetime: a.datetime,
+            x: a.dx,
+            y: a.dy,
+            totalXY: 0
+          } as LocalGuidingFrame;
+        }
+      }));
+
+    const scaledData = computed(() => {
+      return scale(data.value);
+    });
+
+    const chartData = computed(() => {
+      const dataset = {
+        labels: scaledData.value.map((d) => d.datetime.toLocaleTimeString()),
+        datasets: [
+          {
+            data: scaledData.value.map((d) => d.x),
+            backgroundColor: ['blue'],
+            label: selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)' ? selectedAxes.value.xLabel : `${selectedAxes.value.xLabel} RMS`,
+          },
+          {
+            data: scaledData.value.map((d) => d.y),
+            backgroundColor: ['orange'],
+            label: selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)' ? selectedAxes.value.yLabel : `${selectedAxes.value.yLabel} RMS`,
+          },
+          {
+            data: scaledData.value.map((d) => d.totalXY),
+            backgroundColor: ['green'],
+            label: 'Total RMS',
+            hide: true
+          }
+        ],
+      };
+      return dataset;
+    });
+
+    const chartDataOptions = computed(() => {
       return {
         responsive: true,
         plugins: {
           title: {
             display: true,
-            text: title,
+            text: `${selectedAxes.value.title} Axes Chart`,
             font: {
               size: 20
             }
@@ -82,7 +204,7 @@ export default defineComponent({
           legend: {
             labels: {
               filter: function (legendItem: any, chartData: any) {
-                return !(legendItem.datasetIndex === 2 && selectedScale.value !== 'arc-secs/pixel  RMS (50 sec window)');
+                return !(legendItem.datasetIndex === 2 && selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)');
               }
             }
           }
@@ -107,7 +229,7 @@ export default defineComponent({
             },
             ticks: {
               callback: function(value: any, index: any, ticks: any) {
-                if (selectedScale.value !== 'pixels')
+                if (selectedScale.value !== 'Pixels')
                   return Number(value).toFixed(2) + '\"';
                 else
                   return Number(value).toFixed(2);
@@ -116,195 +238,109 @@ export default defineComponent({
           }
         },
       };
-    };
-
-    const mountAxesOptions = computed(() => {
-      const mo = defaultOptions('Mount Axes Chart');
-      // mo.plugins.title.text = ;
-      return mo;
-    });
-    const cameraAxesOptions = computed(() => {
-      const co = defaultOptions('Camera Axes Chart');
-      // mo.plugins.title.text = ;
-      return co;
     });
 
-    interface LocalGuidingFrame {
-      datetime: Date;
-      dx: number;
-      dy: number;
-      totalXY: number;
-      ra: number;
-      dec: number;
-      totalRADEC: number;
-    }
+    const lineChartRef = ref();
 
-    const scale = (x: LocalGuidingFrame[]) => {
-      if (selectedScale.value === 'pixels') {
-        return x;
-      } else if (selectedScale.value === 'arc-secs/pixel ') {
-        return scaleToPixelScale(x);
-      } else if (selectedScale.value === 'arc-secs/pixel  RMS (50 sec window)') {
-        let dataScaledToPixelScale = scaleToPixelScale(x);
-        let newX: LocalGuidingFrame[] = [];
-        const rmsWindow = 50 * 1000; // to milliseconds
-        let lastFrameWindow: Date = dataScaledToPixelScale[0].datetime;
-
-        let currentGuidingFrameWindow: LocalGuidingFrame = {
-          datetime: lastFrameWindow,
-          dx: 0,
-          dy: 0,
-          totalXY: 0,
-          ra: 0,
-          dec: 0,
-          totalRADEC: 0
-        };
-        let counter = 0;
-
-        for (let currentFrame of dataScaledToPixelScale) {
-          counter += 1;
-          if (currentFrame.datetime.valueOf() - lastFrameWindow.valueOf() >= rmsWindow) {
-            currentGuidingFrameWindow.datetime = lastFrameWindow;
-            currentGuidingFrameWindow.dx = Math.sqrt(currentGuidingFrameWindow.dx / counter);
-            currentGuidingFrameWindow.dy = Math.sqrt(currentGuidingFrameWindow.dy / counter);
-            currentGuidingFrameWindow.totalXY = (currentGuidingFrameWindow.dx + currentGuidingFrameWindow.dy) / 2;
-            currentGuidingFrameWindow.ra = Math.sqrt(currentGuidingFrameWindow.ra / counter);
-            currentGuidingFrameWindow.dec = Math.sqrt(currentGuidingFrameWindow.dec / counter);
-            currentGuidingFrameWindow.totalRADEC = (currentGuidingFrameWindow.ra + currentGuidingFrameWindow.dec) / 2;
-            newX = newX.concat(currentGuidingFrameWindow);
-
-            lastFrameWindow = currentFrame.datetime;
-            currentGuidingFrameWindow = {
-              datetime: lastFrameWindow,
-              dx: 0,
-              dy: 0,
-              totalXY: 0,
-              ra: 0,
-              dec: 0,
-              totalRADEC: 0
-            };
-            counter = 1;
-          }
-          currentGuidingFrameWindow.dx += Math.pow(currentFrame.dx, 2);
-          currentGuidingFrameWindow.dy += Math.pow(currentFrame.dy, 2);
-          currentGuidingFrameWindow.ra += Math.pow(currentFrame.ra, 2);
-          currentGuidingFrameWindow.dec += Math.pow(currentFrame.dec, 2);
-        }
-        return newX;
+    function scaleChanged() {
+      if (selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)') {
+        lineChartRef.value.chartInstance.hide(2);
       } else {
-        return [];
+        lineChartRef.value.chartInstance.show(2);
       }
+    }
 
-      function scaleToPixelScale(x: LocalGuidingFrame[]): LocalGuidingFrame[]  {
-        return x.map(x => {
-          x.dx *= selectedGuidingSession.value.pixelScale;
-          x.dy *= selectedGuidingSession.value.pixelScale;
-          x.ra *= selectedGuidingSession.value.pixelScale;
-          x.dec *= selectedGuidingSession.value.pixelScale;
-          return x;
-        });
-      }
+    onMounted(() => {
+      scaleChanged();
+    });
+
+    function updateSelectedGuidingSession(guidingSession: GuidingSession) {
+      selectedGuidingSession.value = guidingSession;
+    }
+
+    const scatterChartData = computed(() => {
+      const dataset = {
+        datasets: [
+          {
+            label: `${selectedAxes.value.title}`,
+            data: data.value,
+            backgroundColor: ['blue'],
+          }
+        ],
+      };
+      return dataset;
+    });
+
+    const scatterChartDataOptions = computed(() => {
+      const suggestedMaxX = Math.max(...data.value.map((x)=> x.x));
+      const suggestedMaxY = Math.max(...data.value.map((x)=> x.y));
+      const suggestedMinX = Math.min(...data.value.map((x)=> x.x));
+      const suggestedMinY = Math.min(...data.value.map((x)=> x.y));
+      const max = Math.max(suggestedMaxX, suggestedMaxY);
+      const min = Math.min(suggestedMinX, suggestedMinY);
+      const suggestion = Math.ceil(Math.max(Math.abs(min), max));
+
+      return {
+        responsive: true,
+        aspectRatio: 1,
+        plugins: {
+          title: {
+            display: true,
+            text: `${selectedAxes.value.title} Scatter`,
+            font: {
+              size: 20
+            }
+          },
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Pixels',
+              font: {
+                size: 12
+              }
+            },
+            max: suggestion,
+            min: -suggestion,
+            ticks: {
+              stepSize: 0.1
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Pixels',
+              font: {
+                size: 12
+              }
+            },
+            max: suggestion,
+            min: -suggestion,
+            ticks: {
+              stepSize: 0.1
+            }
+          }
+        }
+      };
+    });
+
+    return {
+      updateSelectedGuidingSession, lineChartRef, scaleChanged,
+      autorunLog: logs.AutorunLog, phdLog: logs.PHDLog, selectedGuidingSession,
+      selectedScale, selectScaleOptions, selectedAxes, selectAxesOptions,
+      chartData, chartDataOptions, scatterChartData, scatterChartDataOptions,
     };
-
-    const scaledData = computed(() => {
-      let data: LocalGuidingFrame[] = selectedGuidingSession.value.guidingFrames.map((x) => {
-        return { datetime: x.datetime, dx: x.dx, dy: x.dy, ra: x.RARawDistance, dec: x.DECRawDistance } as LocalGuidingFrame;
-        });
-      return scale(data);
-    });
-
-    const cameraAxes = computed(() => {
-     const dataset = {
-        labels: scaledData.value.map((d) => d.datetime.toLocaleTimeString()),
-        datasets: [
-          {
-            data: scaledData.value.map((d) => d.dx),
-            backgroundColor: ['blue'],
-            label: selectedScale.value !== 'arc-secs/pixel  RMS (50 sec window)' ? 'dx' : 'dx RMS',
-          },
-          {
-            data: scaledData.value.map((d) => d.dy),
-            backgroundColor: ['orange'],
-            label: selectedScale.value !== 'arc-secs/pixel  RMS (50 sec window)' ? 'dy' : 'dy RMS',
-          },
-          {
-            data: scaledData.value.map((d) => d.totalXY),
-            backgroundColor: ['green'],
-            label: 'Total RMS',
-          }
-        ],
-      };
-      return dataset;
-    });
-
-    const mountAxes = computed(() => {
-     const dataset =  {
-        labels: scaledData.value.map((d) => d.datetime.toLocaleTimeString()),
-        datasets: [
-          {
-            data: scaledData.value.map((d) => d.ra),
-            backgroundColor: ['blue'],
-            label: selectedScale.value !== 'arc-secs/pixel  RMS (50 sec window)' ? 'RA' : 'RA RMS',
-          },
-          {
-            data: scaledData.value.map((d) => d.dec),
-            backgroundColor: ['orange'],
-            label: selectedScale.value !== 'arc-secs/pixel RMS (50 sec window)' ? 'DEC' : 'DEC RMS',
-          },
-          {
-            data: scaledData.value.map((d) => d.totalRADEC),
-            backgroundColor: ['green'],
-            label: 'Total RMS',
-          }
-        ],
-      };
-      return dataset;
-    });
-
-    const planText = (autorun: Autorun) => {
-      let lights = autorun.exposureEvents.filter((exposure => exposure.type === "Light"));
-      let biases = autorun.exposureEvents.filter((exposure => exposure.type === "Bias"));
-      let darks = autorun.exposureEvents.filter((exposure => exposure.type === "Dark"));
-      let flats = autorun.exposureEvents.filter((exposure => exposure.type === "Flat"));
-
-      let text = 'Plan: \n';
-      if (lights.length > 0) {
-        text = `Plan ${autorun.plan}: \n`;
-        groupBy(lights, (light: ExposureEvent) => light.integrationTime).forEach((grouped) => {
-          text += `Light: ${ grouped.length }x ${grouped[0]?.integrationTime}`;
-        });
-      }
-      if (biases.length > 0) {
-        groupBy(biases, (bias: ExposureEvent) => bias.integrationTime).forEach((grouped) => {
-          text += `Bias: ${ grouped.length }x ${grouped[0]?.integrationTime}`;
-        });
-      }
-      if (darks.length > 0) {
-        groupBy(darks, (dark: ExposureEvent) => dark.integrationTime).forEach((grouped) => {
-          text += `Dark: ${ grouped.length }x ${grouped[0]?.integrationTime}`;
-        });
-      }
-      if (flats.length > 0) {
-        groupBy(flats, (flat: ExposureEvent) => flat.integrationTime).forEach((grouped) => {
-          text += `Flat: ${ grouped.length }x ${grouped[0]?.integrationTime}`;
-        });
-      }
-      return text;
-    }
-
-    function timeDifference(startTime: Date, endTime: Date) {
-      let mills = Math.abs(endTime.getTime() - startTime.getTime()) / 1000;
-      const hours = Math.floor(mills / 3600) % 24;
-      mills -= hours * 3600
-      const minutes = Math.floor(mills / 60) % 60;
-      mills -= minutes * 60;
-      return `(${hours}h ${String(minutes).padStart(2, '0')}m)`;
-    }
-
-    return { timeDifference, guidingSessions: logs.PHDLog.guidingSessions, planText, autorunLog: logs.AutorunLog, selectedGuidingSession, selectedScale, selectOptions, cameraAxes, mountAxes, mountAxesOptions, cameraAxesOptions };
   },
 });
 </script>
 
 <style scoped>
+.scatterChart {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 600px;
+  height: 600px;
+}
 </style>
