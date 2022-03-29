@@ -7,4 +7,5 @@ Website running on https://astro-boys.nl
 
 As an example, try uploading the Autolog and PHD guide files from the data directory in this repository.
 
+![example](images/example_text.png)
 ![example](images/example.png)
