@@ -1,7 +1,9 @@
 # Astrophotography guiding performance
 This application reads the logs created by the ASIAIR device for PHD guiding and the Autorun log for image capture times.
 
-These logs are used to create a guiding performance graph and recommends frames to be dropped based on guiding performance.
+The goal is to parse these logs and use them to create guiding performance graphs and possibly provide recommendations for which imaging frames should be dropped based on the guiding performance.
+
+Work in progress!
 
 Website running on https://astro-boys.nl
 
