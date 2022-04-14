@@ -97,7 +97,7 @@ export default class AutorunLogReader {
         }
         currentAutorun.addAutoCenterEvent(autoCenterEvent);
       } else if (currentLine.startsWith('[AutoFocus|Begin]') && currentAutorun !== null) {
-        const re = /\[AutoFocus\|Begin\] (?:Run AF before Autorun start|Run AF .* later), exposure (.*), temperature (.*)℃/g;
+        const re = /\[AutoFocus\|Begin\] (?:Run AF before Autorun start|Run AF .* later), exposure (.*), temperature (.*)(?:℉|℃)/g;
         const match = re.exec(currentLine);
         if (match === null) {
           throw new Error(`Unable to parse AutoFocus begin line (line: ${index}).`);
