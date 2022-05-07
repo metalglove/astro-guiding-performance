@@ -317,7 +317,7 @@ export default defineComponent({
         datasets: [
           {
             label: `${selectedAxes.value.title}`,
-            data: data.value,
+            data: scaledData.value,
             backgroundColor: ['blue'],
           }
         ],
@@ -326,10 +326,10 @@ export default defineComponent({
     });
 
     const scatterChartDataOptions = computed(() => {
-      const suggestedMaxX = Math.max(...data.value.map((x)=> x.x));
-      const suggestedMaxY = Math.max(...data.value.map((x)=> x.y));
-      const suggestedMinX = Math.min(...data.value.map((x)=> x.x));
-      const suggestedMinY = Math.min(...data.value.map((x)=> x.y));
+      const suggestedMaxX = Math.max(...scaledData.value.map((x)=> x.x));
+      const suggestedMaxY = Math.max(...scaledData.value.map((x)=> x.y));
+      const suggestedMinX = Math.min(...scaledData.value.map((x)=> x.x));
+      const suggestedMinY = Math.min(...scaledData.value.map((x)=> x.y));
       const max = Math.max(suggestedMaxX, suggestedMaxY);
       const min = Math.min(suggestedMinX, suggestedMinY);
       const suggestion = Math.ceil(Math.max(Math.abs(min), max));
@@ -338,6 +338,21 @@ export default defineComponent({
         responsive: true,
         aspectRatio: 1,
         plugins: {
+          zoom: {
+            zoom: {
+              wheel: {
+                enabled: true,
+              },
+              pinch: {
+                enabled: true,
+              },
+              mode: 'xy',
+            },
+            pan: {
+              enabled: true,
+              mode: 'xy',
+            }
+          },
           title: {
             display: true,
             text: `${selectedAxes.value.title} Scatter`,
@@ -348,9 +363,10 @@ export default defineComponent({
         },
         scales: {
           x: {
+            beginAtZero: true,
             title: {
               display: true,
-              text: 'Pixels',
+              text: selectedScale.value,
               font: {
                 size: 12
               }
@@ -358,13 +374,19 @@ export default defineComponent({
             max: suggestion,
             min: -suggestion,
             ticks: {
-              stepSize: 0.1
+              callback: function(value: any, index: any, ticks: any) {
+                if (selectedScale.value !== 'Pixels')
+                  return Number(value).toFixed(2) + '\"';
+                else
+                  return Number(value).toFixed(2);
+              },
             }
           },
           y: {
+            beginAtZero: true,
             title: {
               display: true,
-              text: 'Pixels',
+              text: selectedScale.value,
               font: {
                 size: 12
               }
@@ -372,14 +394,17 @@ export default defineComponent({
             max: suggestion,
             min: -suggestion,
             ticks: {
-              stepSize: 0.1
+              callback: function(value: any, index: any, ticks: any) {
+                if (selectedScale.value !== 'Pixels')
+                  return Number(value).toFixed(2) + '\"';
+                else
+                  return Number(value).toFixed(2);
+              },
             }
           }
         }
       };
     });
-
-
 
     const specialChartDataOptions = computed(() => {
       return {

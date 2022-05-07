@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "chart.js": "^3.7.1",
+    "chartjs-plugin-zoom": "^1.2.1",
     "core-js": "^3.6.5",
     "register-service-worker": "^1.7.1",
     "vue": "^3.0.0",
@@ -18,6 +19,7 @@
     "vuex": "^4.0.0-0"
   },
   "devDependencies": {
+    "@types/chart.js": "^2.9.37",
     "@typescript-eslint/eslint-plugin": "^4.18.0",
     "@typescript-eslint/parser": "^4.18.0",
     "@vue/cli-plugin-babel": "~4.5.15",
