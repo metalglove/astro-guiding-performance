@@ -16,12 +16,12 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue';
-import SpecialLogType from '../utilities/SpecialLogType';
-import { AutorunLog } from '../utilities/AutorunLog';
-import { PHDLog } from '../utilities/PHDLog';
+import SpecialLogType from '../../utilities/SpecialLogType';
+import { AutorunLog } from '../../utilities/AutorunLog';
+import { PHDLog } from '../../utilities/PHDLog';
 import FileUpload from './FileUploadComponent.vue';
-import AutorunLogReader from '../services/AutorunLogReader';
-import PHDLogReader from '../services/PHDLogReader';
+import AutorunLogReader from '../../services/AutorunLogReader';
+import PHDLogReader from '../../services/PHDLogReader';
 
 export default defineComponent({
   name: 'FileUploader',
