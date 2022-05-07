@@ -1,9 +1,11 @@
 {
   "cSpell.words": [
+    "asiair",
     "Autorun",
     "autoruns",
     "datetime",
     "Pierside",
+    "registerables",
     "vuex"
   ],
   "typescript.tsdk": "node_modules/typescript/lib"

@@ -6,8 +6,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref } from 'vue';
-import FileUploader from '../components/FileUploader.vue';
+import { computed, defineComponent, ref } from 'vue';
+import { useAppStore } from '../store';
+import { AppGetterTypes } from '../store/modules/App/App.getters';
+import { AppActionTypes } from '../store/modules/App/App.actions';
+import FileUploader from '../components/File/FileUploader.vue';
 import GuidingPerformance from '../components/GuidingPerformance.vue';
 import { AutorunLog } from '../utilities/AutorunLog';
 import { PHDLog } from '../utilities/PHDLog';
@@ -19,11 +22,14 @@ export default defineComponent({
     GuidingPerformance,
   },
   setup(props, { emit }) {
-    const filesUploaded = ref(false);
+    const store = useAppStore();
+    const filesUploaded = computed(() => store.getters(AppGetterTypes.GET_FILES_UPLOADED));
+
     const localLogs = ref({});
+
     const startProcessing = (logs: { AutorunLog: AutorunLog, PHDLog: PHDLog }) => {
       localLogs.value = logs;
-      filesUploaded.value = true;
+      store.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
     };
 
     return {
