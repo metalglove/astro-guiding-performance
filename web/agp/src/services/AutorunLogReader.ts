@@ -1,4 +1,4 @@
-import { AutoCenterEvent, AutoFocusEvent, Autorun, AutorunLog, ExposureEvent, VCurveMeasurement } from '../utilities/AutorunLog';
+import { AutoCenterEvent, AutoFocusEvent, Autorun, AutorunLog, ExposureEvent, VCurveMeasurement, DitherEvent } from '../utilities/AutorunLog';
 
 export default class AutorunLogReader {
   public parseText(text: string): AutorunLog {
@@ -44,13 +44,15 @@ export default class AutorunLogReader {
           throw new Error(`Unable to parse Autorun plan name (line: ${index}).`);
         }
         currentAutorun = new Autorun(match[1], new Date(currentDateTime));
-      } else if (currentLine.startsWith('[Autorun|End]') && currentAutorun !== null) {
+      } else if (currentAutorun == null) {
+        continue;
+      } else if (currentLine.startsWith('[Autorun|End]')) {
         currentAutorun.endTime = new Date(currentDateTime);
         if (currentAutorun.exposureEvents.length >= 1) {
           autorunLog.addAutorun(currentAutorun);
         }
         currentAutorun = null;
-      } else if (currentLine.startsWith('[AutoCenter|Begin]') && currentAutorun !== null) {
+      } else if (currentLine.startsWith('[AutoCenter|Begin]')) {
         let re = /\[AutoCenter\|Begin\] Auto-Center (.*)\#/g;
         let match = re.exec(currentLine);
         if (match === null) {
@@ -96,8 +98,8 @@ export default class AutorunLogReader {
           autoCenterEvent.distanceFromCenter = match[1];
         }
         currentAutorun.addAutoCenterEvent(autoCenterEvent);
-      } else if (currentLine.startsWith('[AutoFocus|Begin]') && currentAutorun !== null) {
-        const re = /\[AutoFocus\|Begin\] (?:Run AF before Autorun start|Run AF .* later), exposure (.*), temperature (.*)℃/g;
+      } else if (currentLine.startsWith('[AutoFocus|Begin]')) {
+        const re = /\[AutoFocus\|Begin\] (?:.*), exposure (?:.*), temperature (.*)(?:℉|℃)/g;
         const match = re.exec(currentLine);
         if (match === null) {
           throw new Error(`Unable to parse AutoFocus begin line (line: ${index}).`);
@@ -106,7 +108,7 @@ export default class AutorunLogReader {
           startTime: new Date(currentDateTime),
           endTime: new Date(currentDateTime), // temp
           focusPosition: -1,
-          temperature: parseFloat(match[2]),
+          temperature: parseFloat(match[1]),
           vCurveMeasurements: [],
         };
         let autoFocusFailed = false;
@@ -148,8 +150,7 @@ export default class AutorunLogReader {
           autoFocusEvent.focusPosition = parseInt(match[1]);
         }
         currentAutorun.addAutoFocusEvent(autoFocusEvent);
-
-      } else if (currentLine.startsWith('Exposure') && currentAutorun !== null) {
+      } else if (currentLine.startsWith('Exposure')) {
         // TODO: else if could also be regex instead of
         // startsWith using exposure and image as groups
         const re = /Exposure (.*) image (.*)\#/g;
@@ -164,7 +165,28 @@ export default class AutorunLogReader {
           type: currentFrameType,
         };
         currentAutorun.addExposureEvent(exposure);
-      } else if (currentLine.startsWith('Shooting') && currentAutorun !== null) {
+      } else if (currentLine.startsWith('[Guide] Dither')) {
+        const startDate: Date = new Date(currentDateTime);
+        updateCurrentLine();
+        updateCurrentLine(); // Dither Settle
+        if (!currentLine.startsWith('[Guide] Settle')) {
+          updateCurrentLine(); // [Guide] Guide line...
+        }
+        const re = /\[Guide\] Settle (Done|Timeout)/g;
+        const match = re.exec(currentLine);
+        if (match === null) {
+          console.log(currentLine);
+          throw new Error(`Unable to parse Guide Settle line (line: ${index}).`);
+        }
+        const word = match[1];
+        const endDate: Date = new Date(currentDateTime);
+        const ditherEvent: DitherEvent = {
+          startTime: startDate,
+          endTime: endDate,
+          timedOut: word === 'Timeout'
+        };
+        currentAutorun.addDitherEvent(ditherEvent);
+      } else if (currentLine.startsWith('Shooting')) {
         // Shooting 60 light frames, exposure 120.0s Bin1
         const re = /Shooting (?:.*) (.*) frames, (?:.*)/g;
         const match = re.exec(currentLine);

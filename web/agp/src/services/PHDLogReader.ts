@@ -330,7 +330,7 @@ export default class PHDLogReader {
           calibrationSession.setWestCalibrationComplete(westCalibrationAngle, westCalibrationRate, westCalibrationParity);
           updateCurrentLine();
         } else if (currentLine.startsWith('North calibration')) {
-          // set west stuff
+          // set north stuff
           re = /North calibration complete. Angle = (.*) deg, Rate = (.*) px\/sec, Parity = (.*)/g;
           match = re.exec(currentLine);
           if (match === null) {

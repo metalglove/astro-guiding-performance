@@ -36,6 +36,12 @@ interface AutoFocusEvent {
   focusPosition: number;
 }
 
+interface DitherEvent {
+  startTime: Date;
+  endTime: Date;
+  timedOut: boolean;
+}
+
 class Autorun {
   private _startTime: Date;
   private _endTime: Date;
@@ -43,6 +49,7 @@ class Autorun {
   private _exposureEvents: ExposureEvent[];
   private _autoCenterEvents: AutoCenterEvent[];
   private _autoFocusEvents: AutoFocusEvent[];
+  private _ditherEvents: DitherEvent[];
 
   public get autoCenterEvents(): AutoCenterEvent[] {
     return this._autoCenterEvents;
@@ -54,6 +61,10 @@ class Autorun {
 
   public get exposureEvents(): ExposureEvent[] {
     return this._exposureEvents;
+  }
+
+  public get ditherEvents(): DitherEvent[] {
+    return this._ditherEvents;
   }
 
   public get startTime(): Date {
@@ -79,6 +90,7 @@ class Autorun {
     this._exposureEvents = [];
     this._autoCenterEvents = [];
     this._autoFocusEvents = [];
+    this._ditherEvents = [];
   }
 
   public addExposureEvent(exposureEvent: ExposureEvent): void {
@@ -91,6 +103,10 @@ class Autorun {
 
   public addAutoFocusEvent(autoFocusEvent: AutoFocusEvent): void {
     this._autoFocusEvents = this._autoFocusEvents.concat(autoFocusEvent);
+  }
+
+  public addDitherEvent(ditherEvent: DitherEvent): void {
+    this._ditherEvents = this._ditherEvents.concat(ditherEvent);
   }
 }
 
@@ -115,4 +131,4 @@ class AutorunLog {
   }
 }
 
-export { Autorun, AutorunLog, AutoCenterEvent, ExposureEvent, AutoFocusEvent, VCurveMeasurement };
+export { Autorun, AutorunLog, AutoCenterEvent, ExposureEvent, AutoFocusEvent, VCurveMeasurement, DitherEvent };

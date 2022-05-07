@@ -19,6 +19,7 @@
     </select>
     <LineChart ref="lineChartRef" :chartData="chartData" :options="chartDataOptions" />
     <ScatterChart class="scatterChart" :chartData="scatterChartData" :options="scatterChartDataOptions" />
+    <LineChart v-if="canShowMagic" ref="specialLineChartRef" :chartData="specialChartData" :options="specialChartDataOptions" />
   </div>
 </template>
 
@@ -149,14 +150,14 @@ export default defineComponent({
             datetime: a.datetime,
             x: a.RARawDistance,
             y: a.DECRawDistance,
-            totalXY: 0
+            totalXY: 0 // Math.sqrt(Math.pow(a.RARawDistance, 2) + Math.pow(a.DECRawDistance, 2)) / 2
           } as LocalGuidingFrame;
         } else { // (selectedAxes.value === 'Camera') {
           return {
             datetime: a.datetime,
             x: a.dx,
             y: a.dy,
-            totalXY: 0
+            totalXY: 0 // Math.sqrt(Math.pow(a.dx, 2) + Math.pow(a.dy, 2)) / 2
           } as LocalGuidingFrame;
         }
       }));
@@ -241,12 +242,65 @@ export default defineComponent({
     });
 
     const lineChartRef = ref();
+    const canShowMagic = ref(false);
+
+    const specialData = ref();
 
     function scaleChanged() {
       if (selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)') {
         lineChartRef.value.chartInstance.hide(2);
+        canShowMagic.value = false;
       } else {
         lineChartRef.value.chartInstance.show(2);
+
+        function histogram(arr: number[], bins = 10) {
+          const min = Math.min(...arr);
+          const max = Math.max(...arr);
+
+          const step = (max - min) / bins;
+
+          const hist = Array.from({length: bins}, (_, index) => {
+            return {
+              boxStart: min + (index * step),
+              boxEnd: min + (index * step) + step,
+              values: [] as number[],
+              count: 0
+            };
+          });
+
+          for (let index = 0; index < arr.length; index += 1) {
+            const value: number = arr[index];
+            for (let box = 0; box < hist.length; box += 1) {
+              const element = hist[box];
+              if (value >= element.boxStart && value < element.boxEnd) {
+                element.values.push(value);
+                element.count += 1;
+                break;
+              }
+            }
+          }
+
+          return hist;
+        }
+
+        const rms = scaledData.value.map(d => d.totalXY);
+        rms.sort();
+
+        const hist = histogram(rms, 25);
+        const counts = hist.map(x => x.count);
+        const cumulativeSum = (sum => (value: any) => sum += value)(0);
+        const sum = counts.reduce((a, b) => a + b, 0)
+        const pdf = counts.map((x) => x / sum);
+        const cdf = pdf.map(cumulativeSum);
+        const numbers = [];
+        for (let index = 0; index < cdf.length; index += 1) {
+          numbers.push({
+            rms: hist[index].boxStart,
+            cdf: cdf[index]
+          });
+        }
+        specialData.value = numbers;
+        canShowMagic.value = true;
       }
     }
 
@@ -325,11 +379,64 @@ export default defineComponent({
       };
     });
 
+
+
+    const specialChartDataOptions = computed(() => {
+      return {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: `CDF`,
+            font: {
+              size: 20
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Arc-secs/pixel RMS (50 sec window)',
+              font: {
+                size: 12
+              }
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'CDF',
+              font: {
+                size: 12
+              }
+            },
+            max: 1
+          }
+        },
+      };
+    });
+
+    const specialChartData = computed(() => {
+      const dataset = {
+        labels: specialData.value.map((x: any) => Number(x.rms).toFixed(2) + '\"'),
+        datasets: [
+          {
+            label: `CDF`,
+            data: specialData.value.map((x: any) => x.cdf),
+            backgroundColor: ['blue'],
+          }
+        ],
+      };
+      return dataset;
+    });
+
     return {
       updateSelectedGuidingSession, lineChartRef, scaleChanged,
       autorunLog: logs.AutorunLog, phdLog: logs.PHDLog, selectedGuidingSession,
       selectedScale, selectScaleOptions, selectedAxes, selectAxesOptions,
       chartData, chartDataOptions, scatterChartData, scatterChartDataOptions,
+      specialChartData, specialChartDataOptions, canShowMagic,
     };
   },
 });
