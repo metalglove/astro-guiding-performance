@@ -1,10 +1,10 @@
 <template>
   <div>
-    <h2>Autorun log details</h2>
-    <b>Log date:</b><br/> {{ autorunLog.datetime }} <br/>
-    <b>Autorun sessions:</b><br/> {{ autorunLog.autoruns.length }} <br/>
+    <h2>ASIAIR autorun log details</h2>
+    <b>Log date:</b><br/> {{ asiairLog.datetime }} <br/>
+    <b>Autorun sessions:</b><br/> {{ asiairLog.autoruns.length }} <br/>
     <b>Targets:</b><br/>
-    <div v-for="autorun in autorunLog.autoruns" v-bind:key="autorun.startTime">
+    <div v-for="autorun in asiairLog.autoruns" v-bind:key="autorun.startTime">
       <pre> {{ planText(autorun) }} </pre>
     </div>
   </div>
@@ -12,14 +12,14 @@
 
 <script lang="ts">
 import { defineComponent, PropType } from 'vue';
-import { Autorun, AutorunLog, ExposureEvent } from '../utilities/AutorunLog';
+import { Autorun, ASIAIRLog, ExposureEvent } from '../store/modules/ASIAIR/ASIAIR.types';
 import { groupBy } from '../utilities/helpers';
 
 export default defineComponent({
   name: 'AutorunLogDetails',
   props: {
-    autorunLog: {
-      type: Object as PropType<AutorunLog>,
+    asiairLog: {
+      type: Object as PropType<ASIAIRLog>,
       required: true
     },
   },

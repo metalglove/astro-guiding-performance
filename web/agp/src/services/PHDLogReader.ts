@@ -1,4 +1,4 @@
-import { PHDLog, GuidingSession, GuidingFrame, CalibrationSession, CalibrationStep } from '../utilities/PHDLog';
+import { PHDLog, GuidingSession, GuidingFrame, CalibrationSession, CalibrationStep } from '@/store/modules/PHD/PHD.types';
 
 export default class PHDLogReader {
   public parseText(text: string): PHDLog {
@@ -229,7 +229,7 @@ export default class PHDLogReader {
       // Lock position = 462.631, 298.537, Star position = 462.576, 298.547, HFD = 3.30 px
       const { lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels } = parseLockLine();
 
-      currentGuidingSession = new GuidingSession(
+      currentGuidingSession = {
         startTime, dither, ditherScale, imageNoiseReduction,
         pixelScale, binning, focalLength,
         searchRegionInPixels, starMassTolerancePercentage,
@@ -244,12 +244,14 @@ export default class PHDLogReader {
         RAGuideSpeed, DECGuideSpeed,
         degrees, hourAngle, pierSide, rotatorPosition,
         lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels,
-        );
+        guidingFrames: [],
+        endTime: startTime // endTime is not yet known
+      };
     }
 
     function endGuidingSession(): void {
       //add guiding session to phd log
-      phdLog.addGuidingSession(currentGuidingSession!);
+      phdLog.guidingSessions.push(currentGuidingSession!);
       updateCurrentLine();
     }
 
@@ -306,13 +308,15 @@ export default class PHDLogReader {
       // Lock position = 615.602, 127.508, Star position = 615.291, 127.665, HFD = 3.60 px
       const { lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels } = parseLockLine();
 
-      const calibrationSession: CalibrationSession = new CalibrationSession(
-        startTime, camera, equipmentProfile,
+      const calibrationSession: CalibrationSession = {
+        dateTime: startTime, camera, equipmentProfile,
         exposure, pixelScale, binning, focalLength,
         mount, calibrationStep, assumeOrthogonalAxes,
         degrees, hourAngle, pierSide, rotatorPosition,
-        lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels
-        );
+        lockPositionX, lockPositionY, starPositionX, starPositionY, halfFluxDiameterInPixels,
+        calibrationSteps: [], northCalibrationAngle: 0, northCalibrationParity: '',
+        northCalibrationRate: 0, westCalibrationAngle: 0, westCalibrationParity: '', westCalibrationRate: 0
+      };
 
       // 9. data loop
       while (!currentLine.startsWith('Calibration')) {
@@ -327,7 +331,9 @@ export default class PHDLogReader {
           const westCalibrationAngle: number = parseFloat(match[1]);
           const westCalibrationRate: number = parseFloat(match[2]);
           const westCalibrationParity: string = match[3];
-          calibrationSession.setWestCalibrationComplete(westCalibrationAngle, westCalibrationRate, westCalibrationParity);
+          calibrationSession.westCalibrationAngle = westCalibrationAngle;
+          calibrationSession.westCalibrationRate = westCalibrationRate;
+          calibrationSession.westCalibrationParity = westCalibrationParity;
           updateCurrentLine();
         } else if (currentLine.startsWith('North calibration')) {
           // set north stuff
@@ -339,7 +345,9 @@ export default class PHDLogReader {
           const northCalibrationAngle: number = parseFloat(match[1]);
           const northCalibrationRate: number = parseFloat(match[2]);
           const northCalibrationParity: string = match[3];
-          calibrationSession.setNorthCalibrationComplete(northCalibrationAngle, northCalibrationRate, northCalibrationParity);
+          calibrationSession.northCalibrationAngle = northCalibrationAngle;
+          calibrationSession.northCalibrationRate = northCalibrationRate;
+          calibrationSession.northCalibrationParity = northCalibrationParity;
           updateCurrentLine();
         }
 
@@ -355,7 +363,7 @@ export default class PHDLogReader {
           y: parseFloat(cells[5]),
           distance: parseFloat(cells[6]),
         };
-        calibrationSession.addCalibrationStep(step);
+        calibrationSession.calibrationSteps.push(step);
       }
       updateCurrentLine();
       return calibrationSession;
@@ -372,7 +380,7 @@ export default class PHDLogReader {
     const phdLogVersion: string = match[1];
     const logDateTime: Date = new Date(match[2]);
 
-    const phdLog: PHDLog = new PHDLog(phdLogVersion, logDateTime);
+    const phdLog: PHDLog = { phdLogVersion, datetime: logDateTime, guidingSessions: [], calibrationSessions: [] };
     let currentGuidingSession: GuidingSession | null = null;
 
     updateCurrentLine();
@@ -384,7 +392,7 @@ export default class PHDLogReader {
         endGuidingSession();
       } else if (currentLine.startsWith('Calibration Begins')) {
         const calibrationSession: CalibrationSession = parseCalibrationSession();
-        phdLog.addCalibrationSession(calibrationSession);
+        phdLog.calibrationSessions.push(calibrationSession);
       } else {
         // add frame to guiding session
         if (!updateCurrentLine()) {
@@ -429,7 +437,10 @@ export default class PHDLogReader {
             ErrorCode: cells[17]?.replaceAll('\"', '')
           };
         }
-        currentGuidingSession!.addGuidingFrame(guidingFrame);
+        if (!isNaN(guidingFrame.frame)) {
+          currentGuidingSession!.guidingFrames.push(guidingFrame);
+          currentGuidingSession!.endTime = guidingFrame.datetime;
+          }
       }
     }
 

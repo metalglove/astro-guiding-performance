@@ -1,5 +1,5 @@
 enum SpecialLogType {
-  Autorun = 'Autorun',
+  ASIAIR = 'ASIAIR',
   PHD = 'PHD',
 }
 export default SpecialLogType;

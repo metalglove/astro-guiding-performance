@@ -1,7 +1,7 @@
-import { AutoCenterEvent, AutoFocusEvent, Autorun, AutorunLog, ExposureEvent, VCurveMeasurement, DitherEvent } from '../utilities/AutorunLog';
+import { AutoCenterEvent, AutoFocusEvent, Autorun, ASIAIRLog, ExposureEvent, VCurveMeasurement, DitherEvent } from '@/store/modules/ASIAIR/ASIAIR.types';
 
-export default class AutorunLogReader {
-  public parseText(text: string): AutorunLog {
+export default class ASIAIRLogReader {
+  public parseText(text: string): ASIAIRLog {
     if (!text.startsWith('Log enabled at')) {
       throw new Error('Invalid Autorun log text file.');
     }
@@ -11,7 +11,7 @@ export default class AutorunLogReader {
     let index = -1;
     let currentLine = '';
     let currentDateTime = '';
-    const autorunLog: AutorunLog = new AutorunLog(logDateTime);
+    const asiairLog: ASIAIRLog = { datetime: logDateTime, autoruns: [] };
 
     let currentAutorun: Autorun | null = null;
 
@@ -43,13 +43,17 @@ export default class AutorunLogReader {
         if (match === null) {
           throw new Error(`Unable to parse Autorun plan name (line: ${index}).`);
         }
-        currentAutorun = new Autorun(match[1], new Date(currentDateTime));
+        currentAutorun = {
+          plan: match[1], startTime: new Date(currentDateTime),
+          endTime: new Date(currentDateTime), // endTime not yet known
+          exposureEvents: [], autoCenterEvents: [], autoFocusEvents: [], ditherEvents: []
+        };
       } else if (currentAutorun == null) {
         continue;
       } else if (currentLine.startsWith('[Autorun|End]')) {
         currentAutorun.endTime = new Date(currentDateTime);
         if (currentAutorun.exposureEvents.length >= 1) {
-          autorunLog.addAutorun(currentAutorun);
+          asiairLog.autoruns.push(currentAutorun);
         }
         currentAutorun = null;
       } else if (currentLine.startsWith('[AutoCenter|Begin]')) {
@@ -86,7 +90,7 @@ export default class AutorunLogReader {
           updateCurrentLine();
         }
         if (currentLine === '[AutoCenter|End] The target is centered') {
-          currentAutorun.addAutoCenterEvent(autoCenterEvent);
+          currentAutorun.autoCenterEvents.push(autoCenterEvent);
           continue;
         }
 
@@ -97,7 +101,7 @@ export default class AutorunLogReader {
         } else {
           autoCenterEvent.distanceFromCenter = match[1];
         }
-        currentAutorun.addAutoCenterEvent(autoCenterEvent);
+        currentAutorun.autoCenterEvents.push(autoCenterEvent);
       } else if (currentLine.startsWith('[AutoFocus|Begin]')) {
         const re = /\[AutoFocus\|Begin\] (?:.*), exposure (?:.*), temperature (.*)(?:℉|℃)/g;
         const match = re.exec(currentLine);
@@ -149,7 +153,7 @@ export default class AutorunLogReader {
           }
           autoFocusEvent.focusPosition = parseInt(match[1]);
         }
-        currentAutorun.addAutoFocusEvent(autoFocusEvent);
+        currentAutorun.autoFocusEvents.push(autoFocusEvent);
       } else if (currentLine.startsWith('Exposure')) {
         // TODO: else if could also be regex instead of
         // startsWith using exposure and image as groups
@@ -164,7 +168,7 @@ export default class AutorunLogReader {
           image: parseInt(match[2]),
           type: currentFrameType,
         };
-        currentAutorun.addExposureEvent(exposure);
+        currentAutorun.exposureEvents.push(exposure);
       } else if (currentLine.startsWith('[Guide] Dither')) {
         const startDate: Date = new Date(currentDateTime);
         updateCurrentLine();
@@ -185,7 +189,7 @@ export default class AutorunLogReader {
           endTime: endDate,
           timedOut: word === 'Timeout'
         };
-        currentAutorun.addDitherEvent(ditherEvent);
+        currentAutorun.ditherEvents.push(ditherEvent);
       } else if (currentLine.startsWith('Shooting')) {
         // Shooting 60 light frames, exposure 120.0s Bin1
         const re = /Shooting (?:.*) (.*) frames, (?:.*)/g;
@@ -193,11 +197,10 @@ export default class AutorunLogReader {
         if (match === null) {
           throw new Error(`Unable to parse Shooting line (line: ${index}).`);
         }
-
         currentFrameType = match[1][0].toUpperCase() + match[1].slice(1);
       }
     }
 
-    return autorunLog;
+    return asiairLog;
   }
 }

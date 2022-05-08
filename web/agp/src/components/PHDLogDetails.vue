@@ -4,7 +4,7 @@
     Select guiding session:
     <select v-model="selectedGuidingSession" @change="selectedGuidingSessionChange">
        <option v-for="guidingSession in phdLog.guidingSessions" v-bind:key="guidingSession.startTime" v-bind:value="guidingSession">
-        {{ guidingSession.startTime.toLocaleString() + ' ' + timeDifference(guidingSession.startTime, guidingSession.endTime) }}
+        {{ new Date(guidingSession.startTime).toLocaleString() + ' ' + timeDifference(guidingSession.startTime, guidingSession.endTime) }}
       </option>
     </select>
     <br/>
@@ -20,7 +20,7 @@
 
 <script lang="ts">
 import { defineComponent, PropType, ref } from 'vue';
-import { PHDLog } from '../utilities/PHDLog';
+import { PHDLog } from '../store/modules/PHD/PHD.types';
 
 export default defineComponent({
   name: 'PHDLogDetails',
@@ -43,7 +43,7 @@ export default defineComponent({
     }
 
     function timeDifference(startTime: Date, endTime: Date) {
-      let mills = Math.abs(endTime.getTime() - startTime.getTime()) / 1000;
+      let mills = Math.abs(new Date(endTime).getTime() - new Date(startTime).getTime()) / 1000;
       const hours = Math.floor(mills / 3600) % 24;
       mills -= hours * 3600
       const minutes = Math.floor(mills / 60) % 60;

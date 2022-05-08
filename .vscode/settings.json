@@ -4,6 +4,8 @@
     "Autorun",
     "autoruns",
     "datetime",
+    "IASIAIR",
+    "IPHD",
     "Pierside",
     "registerables",
     "vuex"
