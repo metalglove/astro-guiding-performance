@@ -30,5 +30,10 @@ export default defineComponent({
 </script>
 
 <style scoped>
-
+.uploader {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
