@@ -11,35 +11,41 @@
     </div>
 
     <!-- Chart Controls -->
-    <ChartControls
-      :selectedScale="selectedScale"
-      :selectScaleOptions="selectScaleOptions"
-      :dataPointsCount="dataPointsCount"
-      :sampledPointsCount="sampledData.length"
-      @scale-changed="scaleChanged"
-    />
+    <div id="chart-controls">
+      <ChartControls
+        :selectedScale="selectedScale"
+        :selectScaleOptions="selectScaleOptions"
+        :dataPointsCount="dataPointsCount"
+        :sampledPointsCount="sampledData.length"
+        @scale-changed="scaleChanged"
+      />
+    </div>
 
     <!-- Statistics Dashboard -->
-    <ChartStatistics
-      :rmsStats="rmsStats"
-      :maxError="maxError"
-      :sessionDuration="sessionDuration"
-      :dataPointsCount="dataPointsCount"
-      :pixelScale="sessionPixelScale"
-      :selectedScale="selectedScale"
-      :perfectDataPercentage="perfectDataPercentage"
-      :goodDataPercentage="goodDataPercentage"
-    />
+    <div id="chart-statistics">
+      <ChartStatistics
+        :rmsStats="rmsStats"
+        :maxError="maxError"
+        :sessionDuration="sessionDuration"
+        :dataPointsCount="dataPointsCount"
+        :pixelScale="sessionPixelScale"
+        :selectedScale="selectedScale"
+        :perfectDataPercentage="perfectDataPercentage"
+        :goodDataPercentage="goodDataPercentage"
+      />
+    </div>
 
     <!-- Frame Deletion Recommendations -->
-    <FrameRecommendations
-      :guidingSession="selectedGuidingSession"
-      :asiairLog="asiairLog"
-      :binning="selectedGuidingSession.binning || 1"
-    />
+    <div id="frame-recommendations">
+      <FrameRecommendations
+        :guidingSession="selectedGuidingSession"
+        :asiairLog="asiairLog"
+        :binning="selectedGuidingSession.binning || 1"
+      />
+    </div>
 
     <!-- Charts Section -->
-    <div class="charts-section">
+    <div id="guiding-charts" class="charts-section">
       <!-- Time Series Chart -->
       <LineChartComponent
         title="Guiding Performance Over Time"

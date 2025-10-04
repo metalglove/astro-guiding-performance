@@ -57,7 +57,35 @@
    - All hardcoded physics values now use centralized constants for consistency
    - Constants properly documented with references and usage context
 
-vertical bread crumbs on how far we are in the analysis (scrolling)
+✅ comprehensive issue checking and debugging after major refactoring
+   - Resolved all TypeScript compilation errors across computation modules
+   - Fixed import path issues and module resolution problems
+   - Resolved Chart.js type assertion issues for borderDash properties
+   - Cleaned up ESLint warnings and unused imports/variables
+   - Validated application compiles and runs successfully at localhost:8080
+   - All computation functions working correctly with proper type safety
+
+✅ vertical bread crumbs on how far we are in the analysis (scrolling) - COMPLETE
+   - Created AnalysisProgressBreadcrumbs component with dynamic scroll tracking
+   - Fixed positioning on right side with collapsible interface
+   - Detailed progress tracking through 7 analysis sections:
+     1. Analysis Overview - Introduction and data summary
+     2. Log Details - ASIAIR and PHD2 log information
+     3. Chart Controls - Data filtering and scale options
+     4. Performance Statistics - RMS errors and quality metrics
+     5. Frame Recommendations - Problematic frame identification
+     6. Guiding Charts - Time series, scatter, and CDF plots
+     7. Environmental Data - Temperature and focus analysis
+   - Shows completion status, active section, and overall progress percentage
+   - Smooth scrolling navigation to sections when clicked
+   - Responsive design adapts to mobile with bottom positioning
+   - Real-time progress bars and visual indicators for section completion
+   - Automatic progress calculation based on scroll position and viewport
+   - Fixed bottom-of-page completion detection for final section
+   - Enhanced performance analysis granularity for better user guidance
+   - Fixed progress calculation bug preventing >100% progress values
+   - Proper state management ensuring steps are either active OR completed
+   - All functionality tested and working correctly at localhost:8080
 
 update packages
 
@@ -80,10 +108,6 @@ fix temperature chart - waiting for latest version of ASIAIR logging to be check
    - Added equipment profile auto-creation from example data logs
    - Added conditional rendering to hide equipment-dependent computations when no active profile
    - All calculations now use Equipment store dynamically
-
-move theory based computations to functions in their own files to directly reference in documentation.
-
-constants (such as physiscs stuff) should be moved to a global file 
 
 ✅ double check whether all functions no longer use hardcoded values, only from profile
    - Verified all computation functions now use Equipment store

@@ -31,7 +31,10 @@
 
     <!-- Analysis Content -->
     <template v-else>
-      <div class="analysis-header">
+      <!-- Analysis Progress Breadcrumbs -->
+      <AnalysisProgressBreadcrumbs v-if="isDataLoaded" />
+      
+      <div id="analysis-header" class="analysis-header">
         <h1 class="analysis-title">
           <span class="analysis-icon">📊</span>
           Guiding Performance Analysis
@@ -52,7 +55,7 @@
 
       <!-- Main Analysis Content -->
       <template v-else>
-        <div class="analysis-grid">
+        <div id="analysis-grid" class="analysis-grid">
           <div class="analysis-card asiair-card">
             <ASIAIRLogDetails :asiairLog="asiairLog" />
           </div>
@@ -62,14 +65,14 @@
           </div>
         </div>
 
-        <div class="charts-section">
+        <div id="charts-section" class="charts-section">
           <div class="charts-card">
             <PHDLogGuidingCharts v-if="selectedGuidingSession" :selectedGuidingSession="selectedGuidingSession" />
           </div>
         </div>
 
         <!-- Temperature and Autofocus Analysis -->
-        <div v-if="asiairLog && flattenedAutoFocusEvents.length > 0" class="additional-analysis">
+        <div v-if="asiairLog && flattenedAutoFocusEvents.length > 0" id="additional-analysis" class="additional-analysis">
           <TemperatureChart :autoFocusEvents="flattenedAutoFocusEvents" />
           <AutofocusTimeline :autoFocusEvents="flattenedAutoFocusEvents" />
         </div>
@@ -86,6 +89,7 @@ import PHDLogGuidingCharts from '../components/PHDLogGuidingCharts.vue';
 import ASIAIRLogDetails from '../components/ASIAIRLogDetails.vue';
 import TemperatureChart from '../components/Charts/TemperatureChart.vue';
 import AutofocusTimeline from '../components/Charts/AutofocusTimeline.vue';
+import AnalysisProgressBreadcrumbs from '../components/AnalysisProgressBreadcrumbs.vue';
 import { GuidingSession, PHDLog } from '../store/modules/PHD/PHD.types';
 import { ASIAIRLog } from '../store/modules/ASIAIR/ASIAIR.types';
 import { usePHDStore, useASIAIRStore, useAppStore, useEquipmentStore } from '../store/';
@@ -107,6 +111,7 @@ export default defineComponent({
     ASIAIRLogDetails,
     TemperatureChart,
     AutofocusTimeline,
+    AnalysisProgressBreadcrumbs,
   },
   setup() {
     const phdStore = usePHDStore();
