@@ -49,19 +49,19 @@
           <p>Analyzing your guiding data and generating performance metrics.</p>
         </div>
       </div>
-      
+
       <!-- Main Analysis Content -->
       <template v-else>
         <div class="analysis-grid">
           <div class="analysis-card asiair-card">
             <ASIAIRLogDetails :asiairLog="asiairLog" />
           </div>
-          
+
           <div class="analysis-card phd-card">
             <PHDLogDetails :phdLog="phdLog" @selectedGuidingSessionChanged="updateSelectedGuidingSession"/>
           </div>
         </div>
-        
+
         <div class="charts-section">
           <div class="charts-card">
             <PHDLogGuidingCharts v-if="selectedGuidingSession" :selectedGuidingSession="selectedGuidingSession" />
@@ -114,14 +114,14 @@ export default defineComponent({
     const appStore = useAppStore();
     const equipmentStore = useEquipmentStore();
     const router = useRouter();
-    
+
     // Check if files are uploaded and redirect if not
     const filesUploaded = computed(() => {
       const uploaded = appStore.getters(AppGetterTypes.GET_FILES_UPLOADED);
       console.log('PHD Page - Files uploaded status:', uploaded);
       return uploaded;
     });
-    
+
     onMounted(() => {
       console.log('PHD Page mounted, filesUploaded value:', filesUploaded.value);
       if (!filesUploaded.value) {
@@ -131,9 +131,9 @@ export default defineComponent({
         initializeGuidingSession();
       }
     });
-    
-    const phdLog = computed(() => phdStore.getters(PHDGetterTypes.GET_PHD_LOG) as PHDLog | null);
-    const asiairLog = computed(() => asiairStore.getters(ASIAIRGetterTypes.GET_ASIAIR_LOG) as ASIAIRLog | null);
+
+    const phdLog = computed(() => phdStore.getters(PHDGetterTypes.GET_PHD_LOG));
+    const asiairLog = computed(() => asiairStore.getters(ASIAIRGetterTypes.GET_ASIAIR_LOG));
 
     const selectedGuidingSession = ref<GuidingSession | null>(null);
     const isLoadingExample = ref(false);
@@ -178,7 +178,7 @@ export default defineComponent({
     const loadExampleData = async () => {
       console.log('Loading example data from PHD page...');
       isLoadingExample.value = true;
-      
+
       try {
         // Fetch the example files from the data directory
         const [asiairResponse, phdResponse] = await Promise.all([
@@ -213,7 +213,7 @@ export default defineComponent({
         // Set files as uploaded
         appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
         console.log('Example data loaded successfully');
-        
+
         // Initialize the guiding session
         setTimeout(() => {
           initializeGuidingSession();
@@ -235,9 +235,9 @@ export default defineComponent({
 
     // Check if data is loaded
     const isDataLoaded = computed(() => {
-      return phdLog.value && 
-             asiairLog.value && 
-             phdLog.value.guidingSessions && 
+      return phdLog.value &&
+             asiairLog.value &&
+             phdLog.value.guidingSessions &&
              phdLog.value.guidingSessions.length > 0 &&
              selectedGuidingSession.value;
     });
@@ -245,8 +245,8 @@ export default defineComponent({
     // Flatten autofocus events from all autoruns
     const flattenedAutoFocusEvents = computed(() => {
       if (!asiairLog.value || !asiairLog.value.autoruns) return [];
-      
-      return asiairLog.value.autoruns.flatMap((autorun: { autoFocusEvents?: unknown[] }) => 
+
+      return asiairLog.value.autoruns.flatMap((autorun: { autoFocusEvents?: unknown[] }) =>
         autorun.autoFocusEvents || []
       );
     });
@@ -254,9 +254,9 @@ export default defineComponent({
     return {
       filesUploaded,
       showNoDataState,
-      phdLog, 
+      phdLog,
       asiairLog,
-      updateSelectedGuidingSession, 
+      updateSelectedGuidingSession,
       selectedGuidingSession,
       isDataLoaded,
       flattenedAutoFocusEvents,
@@ -540,17 +540,17 @@ export default defineComponent({
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
-  
+
   .analysis-title {
     font-size: 2rem;
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .charts-card {
     padding: 1.5rem;
   }
-  
+
   .loading-state {
     padding: 2rem 1rem;
     min-height: 250px;

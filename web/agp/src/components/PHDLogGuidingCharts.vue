@@ -13,13 +13,10 @@
     <!-- Chart Controls -->
     <ChartControls
       :selectedScale="selectedScale"
-      :selectedAxes="selectedAxes"
       :selectScaleOptions="selectScaleOptions"
-      :selectAxesOptions="selectAxesOptions"
       :dataPointsCount="dataPointsCount"
       :sampledPointsCount="sampledData.length"
       @scale-changed="scaleChanged"
-      @axes-changed="handleAxesChanged"
     />
 
     <!-- Statistics Dashboard -->
@@ -99,20 +96,12 @@ const activePixelScale = computed(() => {
 // Refs
 // Reactive data
 const selectedScale = ref('Arc-secs/pixel');
-const selectedAxes = ref({ title: 'Both Axes', code: 0 });
 
 // Scale options
 const selectScaleOptions = [
   { id: 0, value: 'Pixels' },
   { id: 1, value: 'Arc-secs/pixel' },
   { id: 2, value: 'Arc-secs/pixel RMS (50 sec window)' }
-];
-
-// Axes options
-const selectAxesOptions = [
-  { id: 1, value: { title: 'Both Axes', code: 0 } },
-  { id: 2, value: { title: 'RA Axis', code: 1 } },
-  { id: 3, value: { title: 'Dec Axis', code: 2 } }
 ];
 
 // Computed properties for data processing
@@ -187,7 +176,7 @@ const chartData = computed(() => {
 
   const labels = data.map((d: ProcessedDataPoint) => new Date(d.timestamp).toLocaleTimeString());
 
-  let datasets: Array<{
+  const datasets: Array<{
     label: string;
     data: number[];
     borderColor: string;
@@ -196,10 +185,8 @@ const chartData = computed(() => {
     tension: number;
     pointRadius: number;
     pointHoverRadius?: number;
-  }> = [];
-
-  if (selectedAxes.value.code === 0 || selectedAxes.value.code === 1) {
-    datasets.push({
+  }> = [
+    {
       label: 'RA Error',
       data: data.map((d: ProcessedDataPoint) => d.x),
       borderColor: '#ef4444',
@@ -207,11 +194,8 @@ const chartData = computed(() => {
       borderWidth: data.length > 5000 ? 1 : 1.5,
       pointRadius: data.length > 1000 ? 0 : 2,
       tension: 0.1
-    });
-  }
-
-  if (selectedAxes.value.code === 0 || selectedAxes.value.code === 2) {
-    datasets.push({
+    },
+    {
       label: 'Dec Error',
       data: data.map((d: ProcessedDataPoint) => d.y),
       borderColor: '#3b82f6',
@@ -219,8 +203,8 @@ const chartData = computed(() => {
       borderWidth: data.length > 5000 ? 1 : 1.5,
       pointRadius: data.length > 1000 ? 0 : 2,
       tension: 0.1
-    });
-  }
+    }
+  ];
 
   return { labels, datasets };
 });
@@ -546,10 +530,6 @@ const canShowMagic = computed(() => {
 // Methods
 const scaleChanged = (newScale: string) => {
   selectedScale.value = newScale;
-};
-
-const handleAxesChanged = (axes: { code: number; name: string }) => {
-  selectedAxes.value = axes;
 };
 
 onMounted(() => {

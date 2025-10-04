@@ -15,19 +15,7 @@
         </div>
       </div>
       
-      <div class="control-group">
-        <label class="control-label">
-          <span class="label-icon">🎯</span>
-          Axes
-        </label>
-        <div class="select-wrapper">
-          <select :value="JSON.stringify(selectedAxes)" @change="handleAxesChange" class="control-select">
-            <option v-for="option in selectAxesOptions" :key="option.id" :value="JSON.stringify(option.value)">
-              {{ option.value.title }}
-            </option>
-          </select>
-        </div>
-      </div>
+
       
       <div class="control-group">
         <label class="control-label">
@@ -60,37 +48,20 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-interface AxesOption {
-  title: string;
-  code: number;
-}
-
 interface Props {
   selectedScale: string;
-  selectedAxes: AxesOption;
   selectScaleOptions: Array<{ id: string; value: string }>;
-  selectAxesOptions: Array<{ id: string; value: AxesOption }>;
   dataPointsCount: number;
   sampledPointsCount: number;
 }
 
 const props = defineProps<Props>();
 
-const emit = defineEmits(['scale-changed', 'axes-changed']);
+const emit = defineEmits(['scale-changed']);
 
 const handleScaleChange = (event: Event) => {
   const target = event.target as HTMLSelectElement;
   emit('scale-changed', target.value);
-};
-
-const handleAxesChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement;
-  const selectedOption = props.selectAxesOptions.find(option => 
-    JSON.stringify(option.value) === target.value
-  );
-  if (selectedOption) {
-    emit('axes-changed', selectedOption.value);
-  }
 };
 
 const densityClass = computed(() => {
@@ -125,8 +96,8 @@ const densityLabel = computed(() => {
 
 .controls-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 32px;
   align-items: start;
 }
 
