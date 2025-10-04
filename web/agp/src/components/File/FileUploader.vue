@@ -66,7 +66,7 @@ export default defineComponent({
   components: {
     FileUpload,
   },
-  setup(props, { emit }) {
+  setup() {
     const asiairStore = useASIAIRStore();
     const phdStore = usePHDStore();
     const appStore = useAppStore();
@@ -78,18 +78,34 @@ export default defineComponent({
     const phdLogReader: PHDLogReader = new PHDLogReader();
 
     const onFileUploaded = (file: { logType: string, text: string }) => {
-      if (file.logType === SpecialLogType.ASIAIR) {
-        const asiairLog: ASIAIRLog = asiairLogReader.parseText(file.text);
-        asiairStore.dispatch(ASIAIRActionTypes.SET_ASIAIR_LOG, asiairLog);
-        asiairLogUploaded = true;
-      } else if (file.logType === SpecialLogType.PHD) {
-        const phdLog: PHDLog = phdLogReader.parseText(file.text);
-        phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLog);
-        phdLogUploaded = true;
-      }
+      try {
+        console.log(`Processing ${file.logType} file with ${file.text.length} characters`);
+        
+        if (file.logType === SpecialLogType.ASIAIR) {
+          const asiairLog: ASIAIRLog = asiairLogReader.parseText(file.text);
+          console.log('ASIAIR log parsed:', asiairLog);
+          asiairStore.dispatch(ASIAIRActionTypes.SET_ASIAIR_LOG, asiairLog);
+          asiairLogUploaded = true;
+          console.log('ASIAIR log uploaded successfully');
+        } else if (file.logType === SpecialLogType.PHD) {
+          const phdLog: PHDLog = phdLogReader.parseText(file.text);
+          console.log('PHD log parsed:', phdLog);
+          console.log('PHD guiding sessions:', phdLog.guidingSessions?.length || 0);
+          phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLog);
+          phdLogUploaded = true;
+          console.log('PHD log uploaded successfully');
+        }
 
-      if (asiairLogUploaded && phdLogUploaded) {
-        appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
+        console.log(`Upload status - ASIAIR: ${asiairLogUploaded}, PHD: ${phdLogUploaded}`);
+        
+        if (asiairLogUploaded && phdLogUploaded) {
+          console.log('Both files uploaded, setting files uploaded to true');
+          appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
+        }
+      } catch (error) {
+        console.error(`Error processing ${file.logType} file:`, error);
+        // You could add user notification here
+        alert(`Error processing ${file.logType} file: ${(error as Error).message || error}`);
       }
     };
 

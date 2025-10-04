@@ -1,464 +1,535 @@
 <template>
-  <div>
-    Scale: <select v-model="selectedScale" @change="scaleChanged">
-       <option v-for="option in selectScaleOptions" v-bind:key="option.id" v-bind:value="option.value">
-        {{ option.value }}
-      </option>
-    </select>
-    <br/>
-    Axes: <select v-model="selectedAxes">
-       <option v-for="option in selectAxesOptions" v-bind:key="option.id" v-bind:value="option.value">
-        {{ option.value.title }}
-      </option>
-    </select>
-    <LineChart ref="lineChartRef" :chartData="chartData" :options="chartDataOptions" />
-    <ScatterChart class="scatterChart" :chartData="scatterChartData" :options="scatterChartDataOptions" />
-    <LineChart v-if="canShowMagic" ref="specialLineChartRef" :chartData="specialChartData" :options="specialChartDataOptions" />
+  <div class="guiding-charts">
+    <div class="charts-header">
+      <h2 class="charts-title">
+        <span class="charts-icon">📈</span>
+        Guiding Performance Charts
+      </h2>
+      <p class="charts-subtitle">
+        Analyze your telescope's guiding accuracy with interactive charts and statistics
+      </p>
+    </div>
+
+    <!-- Chart Controls -->
+    <ChartControls
+      :selectedScale="selectedScale"
+      :selectedAxes="selectedAxes"
+      :selectScaleOptions="selectScaleOptions"
+      :selectAxesOptions="selectAxesOptions"
+      :dataPointsCount="dataPointsCount"
+      :sampledPointsCount="sampledData.length"
+      @scale-changed="scaleChanged"
+      @axes-changed="handleAxesChanged"
+    />
+
+    <!-- Statistics Dashboard -->
+    <ChartStatistics
+      :rmsStats="rmsStats"
+      :maxError="maxError"
+      :sessionDuration="sessionDuration"
+      :dataPointsCount="dataPointsCount"
+    />
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+      <!-- Time Series Chart -->
+      <LineChartComponent
+        title="Guiding Performance Over Time"
+        :chartData="chartData"
+        :chartOptions="chartDataOptions"
+        @reset-zoom="resetZoom"
+        @download-chart="() => downloadChart('timeseries')"
+      />
+
+      <!-- Scatter Plot -->
+      <ScatterChartComponent
+        title="RA vs Dec Error Distribution"
+        :chartData="scatterChartData"
+        :chartOptions="scatterChartDataOptions"
+        @reset-zoom="resetZoom"
+        @download-chart="() => downloadChart('scatter')"
+      />
+
+      <!-- Special Chart (if available) -->
+      <LineChartComponent
+        v-if="canShowMagic"
+        title="Cumulative Distribution Function"
+        :chartData="specialChartData"
+        :chartOptions="specialChartDataOptions"
+        @reset-zoom="resetZoom"
+        @download-chart="() => downloadChart('cdf')"
+      />
+    </div>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref, computed, onMounted, PropType, toRef } from 'vue';
-import { LineChart, ScatterChart } from 'vue-chart-3';
-import { GuidingSession } from '../store/modules/PHD/PHD.types';
+<script setup lang="ts">
+import { ref, computed, onMounted, toRef } from 'vue';
+import { GuidingSession, GuidingFrame } from '../store/modules/PHD/PHD.types';
+import ChartControls from './Charts/ChartControls.vue';
+import ChartStatistics from './Charts/ChartStatistics.vue';
+import LineChartComponent from './Charts/LineChartComponent.vue';
+import ScatterChartComponent from './Charts/ScatterChartComponent.vue';
 
-export default defineComponent({
-  name: 'PHDLogGuidingCharts',
-  props: {
-    selectedGuidingSession: {
-      type: Object as PropType<GuidingSession>,
-      required: true
-    },
-  },
-  components: {
-    LineChart,
-    ScatterChart
-  },
-  setup(props, { emit }) {
-    const selectedGuidingSession = toRef(props, 'selectedGuidingSession')
+interface ProcessedDataPoint {
+  x: number;
+  y: number;
+  timestamp: Date;
+  totalXY: number;
+  index: number;
+  frame: number;
+}
 
-    const selectScaleOptions = [
-      {
-        id: 0,
-        value: 'Pixels'
-      },
-      {
-        id: 1,
-        value: 'Arc-secs/pixel'
-      },
-      {
-        id: 2,
-        value: 'Arc-secs/pixel RMS (50 sec window)'
-      }];
-    const selectedScale = ref('Pixels');
+interface Props {
+  selectedGuidingSession: GuidingSession;
+}
 
-    const selectAxesOptions = [
-      {
-        id: 0,
-        value: {
-          title: 'Mount',
-          xLabel: 'RA',
-          yLabel: 'DEC'
-        }
-      },
-      {
-        id: 1,
-        value:  {
-          title: 'Camera',
-          xLabel: 'dx',
-          yLabel: 'dy'
-        }
-      }];
-    const selectedAxes = ref(selectAxesOptions[0].value);
+const props = defineProps<Props>();
 
-    interface LocalGuidingFrame {
-      datetime: Date;
-      x: number;
-      y: number;
-      totalXY: number;
-    }
+const selectedGuidingSession = toRef(props, 'selectedGuidingSession');
 
-    const scale = (x: LocalGuidingFrame[]) => {
-      if (selectedScale.value === 'Pixels') {
-        return x;
-      } else if (selectedScale.value === 'Arc-secs/pixel') {
-        return scaleToPixelScale(x);
-      } else if (selectedScale.value === 'Arc-secs/pixel RMS (50 sec window)') {
-        let dataScaledToPixelScale = scaleToPixelScale(x);
-        let newX: LocalGuidingFrame[] = [];
-        const rmsWindow = 50 * 1000; // to milliseconds
-        let lastFrameWindow: Date = dataScaledToPixelScale[0].datetime;
+// Refs
+const lineChartRef = ref();
+const scatterChartRef = ref();
+const specialLineChartRef = ref();
 
-        let currentGuidingFrameWindow: LocalGuidingFrame = {
-          datetime: lastFrameWindow,
-          x: 0,
-          y: 0,
-          totalXY: 0
-        };
-        let counter = 0;
+// Reactive data
+const selectedScale = ref('Arc-secs/pixel');
+const selectedAxes = ref({ title: 'Both Axes', code: 0 });
 
-        for (let currentFrame of dataScaledToPixelScale) {
-          counter += 1;
-          if (currentFrame.datetime.valueOf() - lastFrameWindow.valueOf() >= rmsWindow) {
-            currentGuidingFrameWindow.datetime = lastFrameWindow;
-            currentGuidingFrameWindow.x = Math.sqrt(currentGuidingFrameWindow.x / counter);
-            currentGuidingFrameWindow.y = Math.sqrt(currentGuidingFrameWindow.y / counter);
-            currentGuidingFrameWindow.totalXY = (currentGuidingFrameWindow.x + currentGuidingFrameWindow.y) / 2;
-            newX = newX.concat(currentGuidingFrameWindow);
+// Scale options
+const selectScaleOptions = [
+  { id: 0, value: 'Pixels' },
+  { id: 1, value: 'Arc-secs/pixel' },
+  { id: 2, value: 'Arc-secs/pixel RMS (50 sec window)' }
+];
 
-            lastFrameWindow = currentFrame.datetime;
-            currentGuidingFrameWindow = {
-              datetime: lastFrameWindow,
-              x: 0,
-              y: 0,
-              totalXY: 0,
-            };
-            counter = 1;
-          }
-          currentGuidingFrameWindow.x += Math.pow(currentFrame.x, 2);
-          currentGuidingFrameWindow.y += Math.pow(currentFrame.y, 2);
-        }
-        return newX;
-      } else {
-        return [];
-      }
+// Axes options
+const selectAxesOptions = [
+  { id: 1, value: { title: 'Both Axes', code: 0 } },
+  { id: 2, value: { title: 'RA Axis', code: 1 } },
+  { id: 3, value: { title: 'Dec Axis', code: 2 } }
+];
 
-      function scaleToPixelScale(x: LocalGuidingFrame[]): LocalGuidingFrame[]  {
-        return x.map((v) => {
-          return {
-            datetime: v.datetime,
-            x: v.x * selectedGuidingSession.value.pixelScale,
-            y: v.y * selectedGuidingSession.value.pixelScale,
-            totalXY: v.totalXY
-          };
-        });
-      }
-    };
-
-    const data = computed(() => selectedGuidingSession.value.guidingFrames.map((a) => {
-        if (selectedAxes.value.title === 'Mount') {
-          return {
-            datetime: new Date(a.datetime),
-            x: new Number(a.RARawDistance),
-            y: new Number(a.DECRawDistance),
-            totalXY: 0 // Math.sqrt(Math.pow(a.RARawDistance, 2) + Math.pow(a.DECRawDistance, 2)) / 2
-          } as LocalGuidingFrame;
-        } else { // (selectedAxes.value === 'Camera') {
-          return {
-            datetime: new Date(a.datetime),
-            x: new Number(a.dx),
-            y: new Number(a.dy),
-            totalXY: 0 // Math.sqrt(Math.pow(a.dx, 2) + Math.pow(a.dy, 2)) / 2
-          } as LocalGuidingFrame;
-        }
-      }));
-
-    const scaledData = computed(() => {
-      return scale(data.value);
-    });
-
-    const chartData = computed(() => {
-      const dataset = {
-        labels: scaledData.value.map((d) => d.datetime.toLocaleTimeString()),
-        datasets: [
-          {
-            data: scaledData.value.map((d) => d.x),
-            backgroundColor: ['blue'],
-            label: selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)' ? selectedAxes.value.xLabel : `${selectedAxes.value.xLabel} RMS`,
-          },
-          {
-            data: scaledData.value.map((d) => d.y),
-            backgroundColor: ['orange'],
-            label: selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)' ? selectedAxes.value.yLabel : `${selectedAxes.value.yLabel} RMS`,
-          },
-          {
-            data: scaledData.value.map((d) => d.totalXY),
-            backgroundColor: ['green'],
-            label: 'Total RMS',
-            hide: true
-          }
-        ],
-      };
-      return dataset;
-    });
-
-    const chartDataOptions = computed(() => {
-      return {
-        responsive: true,
-        plugins: {
-          title: {
-            display: true,
-            text: `${selectedAxes.value.title} Axes Chart`,
-            font: {
-              size: 20
-            }
-          },
-          legend: {
-            labels: {
-              filter: function (legendItem: any, chartData: any) {
-                return !(legendItem.datasetIndex === 2 && selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)');
-              }
-            }
-          }
-        },
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: 'Time',
-              font: {
-                size: 12
-              }
-            },
-          },
-          y: {
-            title: {
-              display: true,
-              text: selectedScale.value,
-              font: {
-                size: 12
-              }
-            },
-            ticks: {
-              callback: function(value: any, index: any, ticks: any) {
-                if (selectedScale.value !== 'Pixels')
-                  return Number(value).toFixed(2) + '\"';
-                else
-                  return Number(value).toFixed(2);
-              }
-            }
-          }
-        },
-      };
-    });
-
-    const lineChartRef = ref();
-    const canShowMagic = ref(false);
-
-    const specialData = ref();
-
-    function scaleChanged() {
-      if (selectedScale.value !== 'Arc-secs/pixel RMS (50 sec window)') {
-        lineChartRef.value.chartInstance.hide(2);
-        canShowMagic.value = false;
-      } else {
-        lineChartRef.value.chartInstance.show(2);
-
-        function histogram(arr: number[], bins = 10) {
-          const min = Math.min(...arr);
-          const max = Math.max(...arr);
-
-          const step = (max - min) / bins;
-
-          const hist = Array.from({length: bins}, (_, index) => {
-            return {
-              boxStart: min + (index * step),
-              boxEnd: min + (index * step) + step,
-              values: [] as number[],
-              count: 0
-            };
-          });
-
-          for (let index = 0; index < arr.length; index += 1) {
-            const value: number = arr[index];
-            for (let box = 0; box < hist.length; box += 1) {
-              const element = hist[box];
-              if (value >= element.boxStart && value < element.boxEnd) {
-                element.values.push(value);
-                element.count += 1;
-                break;
-              }
-            }
-          }
-
-          return hist;
-        }
-
-        const rms = scaledData.value.map(d => d.totalXY);
-        rms.sort();
-
-        const hist = histogram(rms, 25);
-        const counts = hist.map(x => x.count);
-        const cumulativeSum = (sum => (value: any) => sum += value)(0);
-        const sum = counts.reduce((a, b) => a + b, 0)
-        const pdf = counts.map((x) => x / sum);
-        const cdf = pdf.map(cumulativeSum);
-        const numbers = [];
-        for (let index = 0; index < cdf.length; index += 1) {
-          numbers.push({
-            rms: hist[index].boxStart,
-            cdf: cdf[index]
-          });
-        }
-        specialData.value = numbers;
-        canShowMagic.value = true;
+// Computed properties for data processing
+const scaledData = computed(() => {
+  // Safety check - ensure selectedGuidingSession and guidingFrames exist
+  if (!selectedGuidingSession.value || !selectedGuidingSession.value.guidingFrames) {
+    return [];
+  }
+  
+  const session = selectedGuidingSession.value;
+  const frames = session.guidingFrames;
+  const pixelScale = session.pixelScale;
+  
+  return frames.map((frame: GuidingFrame, index: number): ProcessedDataPoint => {
+    let x = frame.dx; // camera axes
+    let y = frame.dy; // camera axes
+    
+    // Apply scaling based on selected scale
+    if (selectedScale.value === 'Arc-secs/pixel' && pixelScale) {
+      x = x * pixelScale;
+      y = y * pixelScale;
+    } else if (selectedScale.value === 'Arc-secs/pixel RMS (50 sec window)') {
+      // Implement RMS windowing here if needed
+      if (pixelScale) {
+        x = x * pixelScale;
+        y = y * pixelScale;
       }
     }
-
-    onMounted(() => {
-      scaleChanged();
-    });
-
-    const scatterChartData = computed(() => {
-      const dataset = {
-        datasets: [
-          {
-            label: `${selectedAxes.value.title}`,
-            data: scaledData.value,
-            backgroundColor: ['blue'],
-          }
-        ],
-      };
-      return dataset;
-    });
-
-    const scatterChartDataOptions = computed(() => {
-      const suggestedMaxX = Math.max(...scaledData.value.map((x)=> x.x));
-      const suggestedMaxY = Math.max(...scaledData.value.map((x)=> x.y));
-      const suggestedMinX = Math.min(...scaledData.value.map((x)=> x.x));
-      const suggestedMinY = Math.min(...scaledData.value.map((x)=> x.y));
-      const max = Math.max(suggestedMaxX, suggestedMaxY);
-      const min = Math.min(suggestedMinX, suggestedMinY);
-      const suggestion = Math.ceil(Math.max(Math.abs(min), max));
-
-      return {
-        responsive: true,
-        aspectRatio: 1,
-        plugins: {
-          zoom: {
-            zoom: {
-              wheel: {
-                enabled: true,
-              },
-              pinch: {
-                enabled: true,
-              },
-              mode: 'xy',
-            },
-            pan: {
-              enabled: true,
-              mode: 'xy',
-            }
-          },
-          title: {
-            display: true,
-            text: `${selectedAxes.value.title} Scatter`,
-            font: {
-              size: 20
-            }
-          },
-        },
-        scales: {
-          x: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: selectedScale.value,
-              font: {
-                size: 12
-              }
-            },
-            max: suggestion,
-            min: -suggestion,
-            ticks: {
-              callback: function(value: any, index: any, ticks: any) {
-                if (selectedScale.value !== 'Pixels')
-                  return Number(value).toFixed(2) + '\"';
-                else
-                  return Number(value).toFixed(2);
-              },
-            }
-          },
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: selectedScale.value,
-              font: {
-                size: 12
-              }
-            },
-            max: suggestion,
-            min: -suggestion,
-            ticks: {
-              callback: function(value: any, index: any, ticks: any) {
-                if (selectedScale.value !== 'Pixels')
-                  return Number(value).toFixed(2) + '\"';
-                else
-                  return Number(value).toFixed(2);
-              },
-            }
-          }
-        }
-      };
-    });
-
-    const specialChartDataOptions = computed(() => {
-      return {
-        responsive: true,
-        plugins: {
-          title: {
-            display: true,
-            text: `CDF`,
-            font: {
-              size: 20
-            }
-          }
-        },
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: 'Arc-secs/pixel RMS (50 sec window)',
-              font: {
-                size: 12
-              }
-            },
-          },
-          y: {
-            title: {
-              display: true,
-              text: 'CDF',
-              font: {
-                size: 12
-              }
-            },
-            max: 1
-          }
-        },
-      };
-    });
-
-    const specialChartData = computed(() => {
-      const dataset = {
-        labels: specialData.value.map((x: any) => Number(x.rms).toFixed(2) + '\"'),
-        datasets: [
-          {
-            label: `CDF`,
-            data: specialData.value.map((x: any) => x.cdf),
-            backgroundColor: ['blue'],
-          }
-        ],
-      };
-      return dataset;
-    });
-
+    
     return {
-      lineChartRef, scaleChanged,
-      selectedScale, selectScaleOptions, selectedAxes, selectAxesOptions,
-      chartData, chartDataOptions, scatterChartData, scatterChartDataOptions,
-      specialChartData, specialChartDataOptions, canShowMagic,
+      x,
+      y,
+      timestamp: frame.datetime,
+      totalXY: Math.sqrt(x * x + y * y),
+      index,
+      frame: frame.frame
     };
+  });
+});
+
+// Sample data for performance
+const sampledData = computed((): ProcessedDataPoint[] => {
+  const data = scaledData.value;
+  if (!data || data.length === 0) return [];
+  
+  const maxPoints = 2000;
+  if (data.length <= maxPoints) return data;
+  
+  const step = Math.floor(data.length / maxPoints);
+  const sampled: ProcessedDataPoint[] = [];
+  
+  for (let i = 0; i < data.length; i += step) {
+    sampled.push(data[i]);
+  }
+  
+  // Always include the last point
+  if (sampled.length > 0 && sampled[sampled.length - 1] !== data[data.length - 1]) {
+    sampled.push(data[data.length - 1]);
+  }
+  
+  return sampled;
+});
+
+// Chart data computations
+const chartData = computed(() => {
+  const data = sampledData.value;
+  if (!data || data.length === 0) return { datasets: [] };
+  
+  const labels = data.map((d: ProcessedDataPoint) => new Date(d.timestamp).toLocaleTimeString());
+  
+  let datasets: any[] = [];
+  
+  if (selectedAxes.value.code === 0 || selectedAxes.value.code === 1) {
+    datasets.push({
+      label: 'RA Error',
+      data: data.map((d: ProcessedDataPoint) => d.x),
+      borderColor: '#ef4444',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      borderWidth: data.length > 5000 ? 1 : 1.5,
+      pointRadius: data.length > 1000 ? 0 : 2,
+      tension: 0.1
+    });
+  }
+  
+  if (selectedAxes.value.code === 0 || selectedAxes.value.code === 2) {
+    datasets.push({
+      label: 'Dec Error',
+      data: data.map((d: ProcessedDataPoint) => d.y),
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+      borderWidth: data.length > 5000 ? 1 : 1.5,
+      pointRadius: data.length > 1000 ? 0 : 2,
+      tension: 0.1
+    });
+  }
+  
+  return { labels, datasets };
+});
+
+const chartDataOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  interaction: {
+    intersect: false,
+    mode: 'index'
   },
+  scales: {
+    x: {
+      display: true,
+      title: {
+        display: true,
+        text: 'Time'
+      }
+    },
+    y: {
+      display: true,
+      title: {
+        display: true,
+        text: `Error (${selectedScale.value})`
+      }
+    }
+  },
+  plugins: {
+    legend: {
+      display: true,
+      position: 'top'
+    },
+    zoom: {
+      zoom: {
+        wheel: { enabled: true },
+        pinch: { enabled: true },
+        mode: 'xy'
+      },
+      pan: {
+        enabled: true,
+        mode: 'xy'
+      }
+    }
+  }
+}));
+
+// Scatter chart data
+const scatterChartData = computed(() => {
+  const data = sampledData.value;
+  if (!data || data.length === 0) return { datasets: [] };
+  
+  return {
+    datasets: [{
+      label: 'RA vs Dec Error',
+      data: data.map((d: ProcessedDataPoint) => ({ x: d.x, y: d.y })),
+      backgroundColor: 'rgba(99, 102, 241, 0.6)',
+      borderColor: '#6366f1',
+      pointRadius: data.length > 5000 ? 1 : 3,
+      pointHoverRadius: 5
+    }]
+  };
+});
+
+const scatterChartDataOptions = computed(() => {
+  const data = scaledData.value;
+  if (!data || data.length === 0) return {};
+  
+  const maxX = Math.max(...data.map((d: ProcessedDataPoint) => Math.abs(d.x)));
+  const maxY = Math.max(...data.map((d: ProcessedDataPoint) => Math.abs(d.y)));
+  const maxVal = Math.max(maxX, maxY);
+  
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        type: 'linear',
+        position: 'bottom',
+        title: {
+          display: true,
+          text: `RA Error (${selectedScale.value})`
+        },
+        min: -maxVal * 1.1,
+        max: maxVal * 1.1
+      },
+      y: {
+        title: {
+          display: true,
+          text: `Dec Error (${selectedScale.value})`
+        },
+        min: -maxVal * 1.1,
+        max: maxVal * 1.1
+      }
+    },
+    plugins: {
+      legend: {
+        display: false
+      },
+      zoom: {
+        zoom: {
+          wheel: { enabled: true },
+          pinch: { enabled: true },
+          mode: 'xy'
+        },
+        pan: {
+          enabled: true,
+          mode: 'xy'
+        }
+      }
+    }
+  };
+});
+
+// Special chart (CDF) data
+const specialChartData = computed(() => {
+  const data = scaledData.value;
+  if (!data || data.length === 0) return { datasets: [] };
+  
+  const errors = data.map((d: ProcessedDataPoint) => d.totalXY).sort((a: number, b: number) => a - b);
+  const cdfData = errors.map((error: number, index: number) => ({
+    x: error,
+    y: (index + 1) / errors.length * 100
+  }));
+  
+  return {
+    datasets: [{
+      label: 'Cumulative Distribution',
+      data: cdfData,
+      borderColor: '#10b981',
+      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+      borderWidth: 2,
+      pointRadius: 0,
+      tension: 0
+    }]
+  };
+});
+
+const specialChartDataOptions = computed(() => ({
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    x: {
+      type: 'linear',
+      title: {
+        display: true,
+        text: `Total Error (${selectedScale.value})`
+      }
+    },
+    y: {
+      title: {
+        display: true,
+        text: 'Cumulative Percentage (%)'
+      },
+      min: 0,
+      max: 100
+    }
+  },
+  plugins: {
+    legend: {
+      display: false
+    }
+  }
+}));
+
+// Statistics computations
+const rmsStats = computed(() => {
+  const data = scaledData.value;
+  if (!data || data.length === 0) {
+    return { total: 0, ra: 0, dec: 0 };
+  }
+  
+  const raValues = data.map((d: ProcessedDataPoint) => d.x);
+  const decValues = data.map((d: ProcessedDataPoint) => d.y);
+  const totalValues = data.map((d: ProcessedDataPoint) => d.totalXY);
+  
+  const raRms = Math.sqrt(raValues.reduce((sum: number, val: number) => sum + val * val, 0) / raValues.length);
+  const decRms = Math.sqrt(decValues.reduce((sum: number, val: number) => sum + val * val, 0) / decValues.length);
+  const totalRms = Math.sqrt(totalValues.reduce((sum: number, val: number) => sum + val * val, 0) / totalValues.length);
+  
+  return {
+    total: totalRms,
+    ra: raRms,
+    dec: decRms
+  };
+});
+
+const maxError = computed(() => {
+  const data = scaledData.value;
+  if (!data || data.length === 0) return 0;
+  
+  return Math.max(...data.map((d: ProcessedDataPoint) => d.totalXY));
+});
+
+const dataPointsCount = computed(() => scaledData.value?.length || 0);
+
+const sessionDuration = computed(() => {
+  const data = scaledData.value;
+  if (!data || data.length < 2) return 0;
+  
+  const startTime = new Date(data[0].timestamp).getTime();
+  const endTime = new Date(data[data.length - 1].timestamp).getTime();
+  
+  return (endTime - startTime) / 1000; // Convert to seconds
+});
+
+const canShowMagic = computed(() => {
+  return scaledData.value && scaledData.value.length > 10;
+});
+
+// Methods
+const scaleChanged = (newScale: string) => {
+  selectedScale.value = newScale;
+};
+
+const handleAxesChanged = (axes: any) => {
+  selectedAxes.value = axes;
+};
+
+const resetZoom = () => {
+  // Reset zoom functionality
+  [lineChartRef, scatterChartRef, specialLineChartRef].forEach(ref => {
+    if (ref.value?.chart) {
+      ref.value.chart.resetZoom();
+    }
+  });
+};
+
+const downloadChart = (type: string) => {
+  let chartRef;
+  let filename;
+  
+  switch (type) {
+    case 'timeseries':
+      chartRef = lineChartRef;
+      filename = 'guiding-timeseries.png';
+      break;
+    case 'scatter':
+      chartRef = scatterChartRef;
+      filename = 'guiding-scatter.png';
+      break;
+    case 'cdf':
+      chartRef = specialLineChartRef;
+      filename = 'guiding-cdf.png';
+      break;
+    default:
+      return;
+  }
+  
+  if (chartRef.value?.chart) {
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = chartRef.value.chart.toBase64Image();
+    link.click();
+  }
+};
+
+onMounted(() => {
+  // Component mounted logic if needed
 });
 </script>
 
 <style scoped>
-.scatterChart {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-  width: 600px;
-  height: 600px;
+.guiding-charts {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.charts-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 24px 0;
+}
+
+.charts-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-color);
+  margin: 0 0 12px 0;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.charts-icon {
+  font-size: 36px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.charts-subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+@media (max-width: 768px) {
+  .guiding-charts {
+    padding: 0 12px;
+  }
+  
+  .charts-title {
+    font-size: 24px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .charts-icon {
+    font-size: 28px;
+  }
+  
+  .charts-subtitle {
+    font-size: 14px;
+  }
 }
 </style>

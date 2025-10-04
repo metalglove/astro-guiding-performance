@@ -10,31 +10,56 @@
       </p>
     </div>
     
-    <div class="analysis-grid">
-      <div class="analysis-card asiair-card">
-        <AutorunLogDetails :asiairLog="asiairLog" />
-      </div>
-      
-      <div class="analysis-card phd-card">
-        <PHDLogDetails :phdLog="phdLog" @selectedGuidingSessionChanged="updateSelectedGuidingSession"/>
+    <!-- Loading State -->
+    <div v-if="!isDataLoaded" class="loading-state">
+      <div class="loading-content">
+        <div class="loading-spinner">🔄</div>
+        <h3>Processing Log Files...</h3>
+        <p>Analyzing your guiding data and generating performance metrics.</p>
+        <div class="loading-steps">
+          <div class="loading-step" :class="{ active: phdLog }">
+            <span class="step-icon">📋</span>
+            PHD2 Log Processing
+          </div>
+          <div class="loading-step" :class="{ active: asiairLog }">
+            <span class="step-icon">🖥️</span>
+            ASIAIR Log Processing
+          </div>
+          <div class="loading-step" :class="{ active: selectedGuidingSession }">
+            <span class="step-icon">⚙️</span>
+            Session Initialization
+          </div>
+        </div>
       </div>
     </div>
     
-    <div class="charts-section">
-      <div class="charts-card">
-        <PHDLogGuidingCharts :selectedGuidingSession="selectedGuidingSession" />
+    <!-- Main Content - Only show when data is loaded -->
+    <template v-else>
+      <div class="analysis-grid">
+        <div class="analysis-card asiair-card">
+          <AutorunLogDetails :asiairLog="asiairLog" />
+        </div>
+        
+        <div class="analysis-card phd-card">
+          <PHDLogDetails :phdLog="phdLog" @selectedGuidingSessionChanged="updateSelectedGuidingSession"/>
+        </div>
       </div>
-    </div>
+      
+      <div class="charts-section">
+        <div class="charts-card">
+          <PHDLogGuidingCharts v-if="selectedGuidingSession" :selectedGuidingSession="selectedGuidingSession" />
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, computed, onMounted } from 'vue';
+import { defineComponent, ref, computed, onMounted, watch } from 'vue';
 import AutorunLogDetails from './ASIAIRLogDetails.vue';
 import PHDLogDetails from './PHDLogDetails.vue';
 import PHDLogGuidingCharts from './PHDLogGuidingCharts.vue';
-import { ASIAIRLog } from '../store/modules/ASIAIR/ASIAIR.types';
-import { GuidingSession, PHDLog } from '../store/modules/PHD/PHD.types';
+import { GuidingSession } from '../store/modules/PHD/PHD.types';
 import { PHDGetterTypes } from '../store/modules/PHD/PHD.getters';
 import { useASIAIRStore, usePHDStore } from '../store';
 import { ASIAIRGetterTypes } from '../store/modules/ASIAIR/ASIAIR.getters';
@@ -46,21 +71,57 @@ export default defineComponent({
     PHDLogDetails,
     PHDLogGuidingCharts,
   },
-  setup(props, { emit }) {
+  setup() {
     const phdStore = usePHDStore();
     const asiairStore = useASIAIRStore();
-    const phdLog: PHDLog = phdStore.getters(PHDGetterTypes.GET_PHD_LOG);
-    const asiairLog: ASIAIRLog = asiairStore.getters(ASIAIRGetterTypes.GET_ASIAIR_LOG);
+    
+    // Use computed properties to make data reactive
+    const phdLog = computed(() => phdStore.getters(PHDGetterTypes.GET_PHD_LOG));
+    const asiairLog = computed(() => asiairStore.getters(ASIAIRGetterTypes.GET_ASIAIR_LOG));
 
-    const selectedGuidingSession = ref(phdLog.guidingSessions[0]);
+    // Use computed for selectedGuidingSession to handle loading states
+    const selectedGuidingSession = ref<GuidingSession | null>(null);
+
+    // Watch for phdLog changes and set initial session
+    const initializeGuidingSession = () => {
+      if (phdLog.value && phdLog.value.guidingSessions && phdLog.value.guidingSessions.length > 0) {
+        if (!selectedGuidingSession.value) {
+          selectedGuidingSession.value = phdLog.value.guidingSessions[0];
+        }
+      }
+    };
+
+    // Initialize on mount and when data changes
+    onMounted(() => {
+      initializeGuidingSession();
+    });
+
+    // Watch for phdLog changes using proper watch
+    watch(phdLog, (newValue: any) => {
+      if (newValue) {
+        initializeGuidingSession();
+      }
+    }, { immediate: true });
 
     function updateSelectedGuidingSession(guidingSession: GuidingSession) {
       selectedGuidingSession.value = guidingSession;
     }
 
+    // Computed properties to check if data is loaded
+    const isDataLoaded = computed(() => {
+      return phdLog.value && 
+             asiairLog.value && 
+             phdLog.value.guidingSessions && 
+             phdLog.value.guidingSessions.length > 0 &&
+             selectedGuidingSession.value;
+    });
+
     return {
-      updateSelectedGuidingSession, selectedGuidingSession,
-      asiairLog, phdLog,
+      updateSelectedGuidingSession, 
+      selectedGuidingSession,
+      asiairLog, 
+      phdLog,
+      isDataLoaded,
     };
   },
 });
@@ -140,6 +201,71 @@ export default defineComponent({
   border-top: 4px solid var(--accent-color);
 }
 
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  padding: 3rem;
+}
+
+.loading-content {
+  text-align: center;
+  max-width: 500px;
+}
+
+.loading-spinner {
+  font-size: 3rem;
+  animation: spin 2s linear infinite;
+  margin-bottom: 2rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-content h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 0.5rem;
+}
+
+.loading-content p {
+  color: var(--gray-600);
+  margin-bottom: 2rem;
+  line-height: 1.6;
+}
+
+.loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.loading-step {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--gray-100);
+  border-radius: var(--border-radius);
+  color: var(--gray-600);
+  transition: var(--transition);
+}
+
+.loading-step.active {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.step-icon {
+  font-size: 1.25rem;
+}
+
 @media (max-width: 768px) {
   .analysis-grid {
     grid-template-columns: 1fr;
@@ -154,6 +280,20 @@ export default defineComponent({
   
   .charts-card {
     padding: 1.5rem;
+  }
+  
+  .loading-state {
+    padding: 2rem 1rem;
+    min-height: 300px;
+  }
+  
+  .loading-steps {
+    gap: 0.75rem;
+  }
+  
+  .loading-step {
+    padding: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 </style>
