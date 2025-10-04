@@ -118,6 +118,69 @@
         </div>
       </section>
 
+      <!-- Frame Recommendations Section -->
+      <section class="methodology-section">
+        <h2>Data-Driven Frame Recommendations</h2>
+
+        <h3>Cross-Platform Data Correlation</h3>
+        <p>
+          Our frame recommendation system correlates PHD2 guiding data with ASIAIR imaging logs to provide
+          precise, actionable recommendations for frame selection during post-processing.
+        </p>
+
+        <h3>Real Exposure Analysis</h3>
+        <p>
+          Unlike theoretical approaches that assume exposure durations, our system uses actual ASIAIR log data
+          to identify the exact timing and duration of each light frame exposure:
+        </p>
+        <div class="formula">
+          <code>
+            For each ASIAIR light frame exposure:<br>
+            1. Extract start time and integration duration<br>
+            2. Find all PHD2 measurements during exposure period<br>
+            3. Analyze guiding quality throughout exposure<br>
+            4. Flag entire frame if ANY measurement exceeds thresholds
+          </code>
+        </div>
+
+        <h3>Long Exposure Impact Principle</h3>
+        <div class="threshold-box needs-improvement">
+          <h4>Critical Insight: Brief Problems, Lasting Impact</h4>
+          <p>
+            Even 2-3 seconds of poor guiding during a 120-second exposure can cause star trailing
+            across the entire frame. Our analysis identifies complete imaging frames that should be
+            excluded from stacking, not just individual problematic guiding measurements.
+          </p>
+        </div>
+
+        <h3>Imaging Camera Precision</h3>
+        <p>
+          Frame recommendations use imaging camera specifications rather than guide camera parameters:
+        </p>
+        <ul>
+          <li><strong>Guide Camera:</strong> Used for tracking corrections (typically 2-4μm pixels)</li>
+          <li><strong>Imaging Camera:</strong> Captures final images requiring precision analysis (typically 3-5μm pixels)</li>
+          <li><strong>Quality Assessment:</strong> Based on imaging camera pixel scale for accurate thresholds</li>
+        </ul>
+
+        <h3>Recommendation Categories</h3>
+        <p>
+          The system identifies problematic frames based on multiple criteria:
+        </p>
+        <ul>
+          <li><strong>Quality Threshold Violations:</strong> Errors exceeding 1.0 pixel tolerance</li>
+          <li><strong>Large Error Events:</strong> Significant guiding corrections (>3 pixels)</li>
+          <li><strong>Sudden Position Jumps:</strong> Rapid position changes indicating mount issues</li>
+          <li><strong>Low SNR Periods:</strong> Poor star detection affecting guiding accuracy</li>
+        </ul>
+
+        <h3>Practical Implementation</h3>
+        <p>
+          Recommendations provide specific image numbers that correspond to your actual capture sequence.
+          For example: "Drop Image #15, #23, #47" rather than generic time-based suggestions.
+        </p>
+      </section>
+
       <!-- Technical Considerations Section -->
       <section class="methodology-section">
         <h2>Technical Considerations</h2>
@@ -163,13 +226,14 @@
 
         <h3>Equipment-Specific Calibration</h3>
         <p>
-          Calculations are automatically adjusted for:
+          Quality assessments and frame recommendations automatically adjust for equipment specifications:
         </p>
         <ul>
-          <li>Camera pixel size and resolution</li>
-          <li>Telescope focal length</li>
-          <li>Binning settings</li>
-          <li>Guide camera vs. main camera specifications</li>
+          <li><strong>Imaging Camera:</strong> Pixel size and resolution for quality threshold calculations</li>
+          <li><strong>Guide Camera:</strong> Used for PHD2 calibration and measurement scale</li>
+          <li><strong>Telescope:</strong> Focal length for accurate pixel scale derivation</li>
+          <li><strong>Binning Settings:</strong> Applied to effective pixel size calculations</li>
+          <li><strong>Cross-Platform Integration:</strong> ASIAIR exposure timing with PHD2 guiding data</li>
         </ul>
 
         <h3>Limitations</h3>
@@ -177,7 +241,9 @@
           <li>Assumes linear relationship between guiding errors and image quality</li>
           <li>Does not account for atmospheric seeing conditions</li>
           <li>Thresholds are conservative estimates; actual tolerance may vary by target and conditions</li>
-          <li>Analysis is limited to the quality of input PHD2 calibration data</li>
+          <li>Frame recommendations require both PHD2 and ASIAIR log files for correlation</li>
+          <li>Analysis accuracy depends on temporal synchronization between logs</li>
+          <li>Limited to ASIAIR-compatible imaging platforms for frame-specific recommendations</li>
         </ul>
       </section>
 
@@ -240,6 +306,29 @@
             <p><strong>Good Data:</strong> &lt;30%</p>
             <p><strong>RMS Total:</strong> &gt;1.5″</p>
             <p>Review mount, guiding setup, or environmental conditions.</p>
+          </div>
+        </div>
+
+        <h3>Frame Recommendation Interpretation</h3>
+        <div class="frame-rec-guide">
+          <div class="rec-card low-impact">
+            <h4>🟢 Minimal Impact (&lt;5% frames flagged)</h4>
+            <p>Excellent guiding consistency. Very few frames need removal, indicating stable conditions and well-tuned equipment.</p>
+          </div>
+          
+          <div class="rec-card moderate-impact">
+            <h4>🟡 Moderate Impact (5-15% frames flagged)</h4>
+            <p>Good overall performance with some problematic periods. Recommended frame removal will significantly improve final image quality.</p>
+          </div>
+          
+          <div class="rec-card high-impact">
+            <h4>🟠 High Impact (15-30% frames flagged)</h4>
+            <p>Substantial guiding issues detected. Consider investigating mount, environmental conditions, or guiding parameters before next session.</p>
+          </div>
+          
+          <div class="rec-card critical-impact">
+            <h4>🔴 Critical Impact (&gt;30% frames flagged)</h4>
+            <p>Severe guiding problems. Majority of frames compromised - review entire guiding setup, balance, and environmental factors.</p>
           </div>
         </div>
       </section>
@@ -415,6 +504,53 @@
   font-size: 14px;
 }
 
+/* Frame Recommendation Guide */
+.frame-rec-guide {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.rec-card {
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 4px solid;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.low-impact {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.moderate-impact {
+  border-left-color: #eab308;
+  background: rgba(234, 179, 8, 0.08);
+}
+
+.high-impact {
+  border-left-color: #f97316;
+  background: rgba(249, 115, 22, 0.08);
+}
+
+.critical-impact {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.rec-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.rec-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 a {
   color: var(--primary-color);
   text-decoration: none;
@@ -441,6 +577,11 @@ a:hover {
   
   .interpretation-grid {
     grid-template-columns: 1fr;
+  }
+  
+  .frame-rec-guide {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
 }
 </style>

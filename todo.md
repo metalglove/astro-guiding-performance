@@ -14,7 +14,12 @@
    - Responsive breakpoints for desktop, mobile, and small mobile devices
    - Added accessibility features with keyboard navigation and focus indicators
 
-update methodology if there were any changes
+✅ update methodology if there were any changes
+   - Added comprehensive "Data-Driven Frame Recommendations" section explaining ASIAIR log correlation
+   - Updated equipment calibration section to emphasize imaging camera pixel scale importance
+   - Added "Frame Recommendation Interpretation" guide with four impact categories
+   - Enhanced limitations section to include cross-platform correlation considerations
+   - Added visual styling and formatting for improved readability
 
 remove debugging statements 
 
@@ -30,6 +35,8 @@ validate whether the equipment functionality works updating and changing profile
 move theory based computations to functions in their own files to directly reference in documentation.
 
 constants (such as physiscs stuff) should be moved to a global file 
+
+vertical bread crumbs on how far we are in the analysis (scrolling)
 
 update packages
 

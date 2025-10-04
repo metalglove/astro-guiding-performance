@@ -7,7 +7,7 @@
             <span class="icon">🔭</span>
             Astro Guiding Performance
           </h1>
-          <button 
+          <button
             class="mobile-menu-toggle"
             @click="isMobileMenuOpen = !isMobileMenuOpen"
             :class="{ 'active': isMobileMenuOpen }"
@@ -48,7 +48,7 @@ export default defineComponent({
     const handleClickOutside = (event: Event) => {
       const target = event.target as HTMLElement;
       const header = document.querySelector('.app-header');
-      
+
       if (isMobileMenuOpen.value && header && !header.contains(target)) {
         closeMobileMenu();
       }
@@ -106,7 +106,7 @@ export default defineComponent({
   --border-radius: 0.5rem;
   --border-radius-lg: 0.75rem;
   --transition: all 0.2s ease-in-out;
-  
+
   /* Additional variables for equipment components */
   --bg-color: #f9fafb;
   --text-color: #1f2937;
@@ -306,11 +306,11 @@ body {
     flex-wrap: nowrap;
     justify-content: space-between;
   }
-  
+
   .mobile-menu-toggle {
     display: flex;
   }
-  
+
   .app-nav {
     position: absolute;
     top: 100%;
@@ -327,13 +327,13 @@ body {
     transition: all 0.3s ease;
     z-index: 100;
   }
-  
+
   .app-nav.mobile-open {
     transform: translateY(0);
     opacity: 1;
     visibility: visible;
   }
-  
+
   .nav-link {
     display: block;
     padding: 0.75rem 1.5rem;
@@ -341,20 +341,20 @@ body {
     margin: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
+
   .nav-link:last-child {
     border-bottom: none;
   }
-  
+
   .nav-link.router-link-exact-active::after {
     display: none;
   }
-  
+
   .nav-link.router-link-exact-active {
     background-color: rgba(255, 255, 255, 0.2);
     border-left: 4px solid var(--accent-color);
   }
-  
+
   .container {
     padding: 0 0.75rem;
   }
@@ -364,11 +364,11 @@ body {
   .app-title {
     font-size: 1.25rem;
   }
-  
+
   .app-title .icon {
     font-size: 1.5rem;
   }
-  
+
   .container {
     padding: 0 0.5rem;
   }
