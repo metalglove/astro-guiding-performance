@@ -88,15 +88,14 @@ import TemperatureChart from '../components/Charts/TemperatureChart.vue';
 import AutofocusTimeline from '../components/Charts/AutofocusTimeline.vue';
 import { GuidingSession, PHDLog } from '../store/modules/PHD/PHD.types';
 import { ASIAIRLog } from '../store/modules/ASIAIR/ASIAIR.types';
-import { usePHDStore } from '../store/';
-import { useASIAIRStore } from '../store/';
-import { useAppStore } from '../store/';
+import { usePHDStore, useASIAIRStore, useAppStore, useEquipmentStore } from '../store/';
 import { PHDGetterTypes } from '../store/modules/PHD/PHD.getters';
 import { ASIAIRGetterTypes } from '../store/modules/ASIAIR/ASIAIR.getters';
 import { AppGetterTypes } from '../store/modules/App/App.getters';
 import { PHDActionTypes } from '../store/modules/PHD/PHD.actions';
 import { ASIAIRActionTypes } from '../store/modules/ASIAIR/ASIAIR.actions';
 import { AppActionTypes } from '../store/modules/App/App.actions';
+import { EquipmentActionTypes } from '../store/modules/Equipment/Equipment.actions';
 import ASIAIRLogReader from '../services/ASIAIRLogReader';
 import PHDLogReader from '../services/PHDLogReader';
 
@@ -113,6 +112,7 @@ export default defineComponent({
     const phdStore = usePHDStore();
     const asiairStore = useASIAIRStore();
     const appStore = useAppStore();
+    const equipmentStore = useEquipmentStore();
     const router = useRouter();
     
     // Check if files are uploaded and redirect if not
@@ -205,6 +205,13 @@ export default defineComponent({
         console.log('Example PHD log parsed:', phdLogData);
         console.log('Example PHD guiding sessions:', phdLogData.guidingSessions?.length || 0);
         phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLogData);
+
+        // Create equipment profile from example log data
+        console.log('Creating equipment profile from example data...');
+        equipmentStore.dispatch(EquipmentActionTypes.CREATE_PROFILE_FROM_LOGS, {
+          phdLog: phdText,
+          asiairLog: asiairText
+        });
 
         // Set files as uploaded
         appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);

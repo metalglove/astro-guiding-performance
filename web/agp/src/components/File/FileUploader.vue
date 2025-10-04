@@ -81,10 +81,11 @@ import { PHDLog } from '../../store/modules/PHD/PHD.types';
 import FileUpload from './FileUploadComponent.vue';
 import ASIAIRLogReader from '../../services/ASIAIRLogReader';
 import PHDLogReader from '../../services/PHDLogReader';
-import { usePHDStore, useASIAIRStore, useAppStore } from '../../store/';
+import { usePHDStore, useASIAIRStore, useAppStore, useEquipmentStore } from '../../store/';
 import { ASIAIRActionTypes } from '../../store/modules/ASIAIR/ASIAIR.actions';
 import { PHDActionTypes } from '../../store/modules/PHD/PHD.actions';
 import { AppActionTypes } from '../../store/modules/App/App.actions';
+import { EquipmentActionTypes } from '../../store/modules/Equipment/Equipment.actions';
 
 export default defineComponent({
   name: 'FileUploader',
@@ -100,6 +101,7 @@ export default defineComponent({
     const asiairStore = useASIAIRStore();
     const phdStore = usePHDStore();
     const appStore = useAppStore();
+    const equipmentStore = useEquipmentStore();
     const router = useRouter();
 
     let asiairLogUploaded = false;
@@ -140,6 +142,13 @@ export default defineComponent({
         console.log('Example PHD log parsed:', phdLog);
         console.log('Example PHD guiding sessions:', phdLog.guidingSessions?.length || 0);
         phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLog);
+
+        // Create equipment profile from example log data
+        console.log('Creating equipment profile from example data...');
+        equipmentStore.dispatch(EquipmentActionTypes.CREATE_PROFILE_FROM_LOGS, {
+          phdLog: phdText,
+          asiairLog: asiairText
+        });
 
         // Set files as uploaded
         appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);

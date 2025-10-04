@@ -10,8 +10,19 @@
       </p>
     </div>
 
+    <!-- Equipment Profile Warning -->
+    <div v-if="!hasActiveProfile" class="equipment-warning">
+      <div class="warning-content">
+        <span class="warning-icon">⚠️</span>
+        <div class="warning-text">
+          <h4>No Equipment Profile Found</h4>
+          <p>Create an equipment profile to see detailed pixel-scale analysis and performance calculations.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Camera Selection -->
-    <div class="camera-selection">
+    <div v-if="hasActiveProfile" class="camera-selection">
       <div class="camera-selection-header">
         <h4 class="camera-selection-title">
           <span class="camera-icon">📷</span>
@@ -113,8 +124,8 @@
         </div>
       </div>
 
-      <!-- Perfect Data Analysis (only show in arcsecond mode) -->
-      <div v-if="isArcsecondScale" class="stat-card perfect-card">
+      <!-- Perfect Data Analysis (only show in arcsecond mode and with equipment profile) -->
+      <div v-if="isArcsecondScale && hasActiveProfile" class="stat-card perfect-card">
         <div class="stat-header">
           <span class="stat-icon">🎯</span>
           <span class="stat-label">Perfect Data</span>
@@ -128,7 +139,7 @@
         </div>
       </div>
 
-      <div v-if="isArcsecondScale" class="stat-card good-card">
+      <div v-if="isArcsecondScale && hasActiveProfile" class="stat-card good-card">
         <div class="stat-header">
           <span class="stat-icon">✨</span>
           <span class="stat-label">Good Data</span>
@@ -205,6 +216,12 @@ const props = defineProps<Props>();
 
 // Equipment store
 const equipmentStore = useEquipmentStore();
+
+// Check if active profile exists
+const hasActiveProfile = computed(() => {
+  const profile = equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PROFILE);
+  return profile && profile !== null;
+});
 
 // Camera selection state
 const selectedCamera = ref('active-profile');
@@ -593,6 +610,41 @@ const formatDuration = (seconds: number): string => {
 
 .camera-info-card {
   border-left: 4px solid #84cc16;
+}
+
+/* Equipment Warning */
+.equipment-warning {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.warning-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.warning-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.warning-text h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #92400e;
+}
+
+.warning-text p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #92400e;
+  line-height: 1.4;
 }
 
 @media (max-width: 768px) {
