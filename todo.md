@@ -25,3 +25,5 @@ double check whether all functions no longer use hardcoded values, only from pro
 add equipmentstore to the root store
 
 update readme images
+
+update packages
