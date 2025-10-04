@@ -118,16 +118,13 @@ export default defineComponent({
     // Check if files are uploaded and redirect if not
     const filesUploaded = computed(() => {
       const uploaded = appStore.getters(AppGetterTypes.GET_FILES_UPLOADED);
-      console.log('PHD Page - Files uploaded status:', uploaded);
       return uploaded;
     });
 
     onMounted(() => {
-      console.log('PHD Page mounted, filesUploaded value:', filesUploaded.value);
       if (!filesUploaded.value) {
-        console.log('No data available, showing notification to load data first');
+        // No data available, showing notification to load data first
       } else {
-        console.log('Data available, initializing guiding session');
         initializeGuidingSession();
       }
     });
@@ -165,7 +162,6 @@ export default defineComponent({
 
     // Clear data for testing (can be called from console)
     const clearData = () => {
-      console.log('Clearing all data');
       appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, false);
       localStorage.removeItem('AppState.filesUploaded');
     };
@@ -176,7 +172,6 @@ export default defineComponent({
     }
 
     const loadExampleData = async () => {
-      console.log('Loading example data from PHD page...');
       isLoadingExample.value = true;
 
       try {
@@ -193,26 +188,19 @@ export default defineComponent({
         const asiairText = await asiairResponse.text();
         const phdText = await phdResponse.text();
 
-        console.log('Example files fetched successfully');
-
         // Process ASIAIR log
         const asiairLog: ASIAIRLog = asiairLogReader.parseText(asiairText);
-        console.log('Example ASIAIR log parsed:', asiairLog);
         asiairStore.dispatch(ASIAIRActionTypes.SET_ASIAIR_LOG, asiairLog);
 
         // Process PHD log
         const phdLogData: PHDLog = phdLogReader.parseText(phdText);
-        console.log('Example PHD log parsed:', phdLogData);
-        console.log('Example PHD guiding sessions:', phdLogData.guidingSessions?.length || 0);
         phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLogData);
 
         // Ensure example equipment profile exists
-        console.log('Ensuring example equipment profile exists...');
         equipmentStore.dispatch(EquipmentActionTypes.ENSURE_EXAMPLE_PROFILE, undefined);
 
         // Set files as uploaded
         appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
-        console.log('Example data loaded successfully');
 
         // Initialize the guiding session
         setTimeout(() => {
@@ -229,7 +217,6 @@ export default defineComponent({
     // Check if we should show the no data state
     const showNoDataState = computed(() => {
       const uploaded = filesUploaded.value;
-      console.log('showNoDataState check - filesUploaded:', uploaded);
       return uploaded === null || uploaded === false;
     });
 

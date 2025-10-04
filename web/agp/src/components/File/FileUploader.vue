@@ -109,7 +109,6 @@ export default defineComponent({
     const isLoadingExample = ref(false);
 
     const loadExampleData = async () => {
-      console.log('Loading example data...');
       isLoadingExample.value = true;
       
       try {
@@ -126,26 +125,19 @@ export default defineComponent({
         const asiairText = await asiairResponse.text();
         const phdText = await phdResponse.text();
 
-        console.log('Example files fetched successfully');
-
         // Process ASIAIR log
         const asiairLog: ASIAIRLog = asiairLogReader.parseText(asiairText);
-        console.log('Example ASIAIR log parsed:', asiairLog);
         asiairStore.dispatch(ASIAIRActionTypes.SET_ASIAIR_LOG, asiairLog);
 
         // Process PHD log
         const phdLog: PHDLog = phdLogReader.parseText(phdText);
-        console.log('Example PHD log parsed:', phdLog);
-        console.log('Example PHD guiding sessions:', phdLog.guidingSessions?.length || 0);
         phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLog);
 
         // Ensure example equipment profile exists
-        console.log('Ensuring example equipment profile exists...');
         equipmentStore.dispatch(EquipmentActionTypes.ENSURE_EXAMPLE_PROFILE, undefined);
 
         // Set files as uploaded
         appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
-        console.log('Example data loaded successfully');
         
         // Navigate to PHD analysis page
         router.push('/phd');
@@ -158,29 +150,19 @@ export default defineComponent({
     };
 
     const onFileUploaded = async (files: Array<{ file: File; logType: SpecialLogType; text: string }>) => {
-      console.log('Files uploaded:', files);
-      
       for (const file of files) {
         try {
         if (file.logType === SpecialLogType.ASIAIR) {
           const asiairLog: ASIAIRLog = asiairLogReader.parseText(file.text);
-          console.log('ASIAIR log parsed:', asiairLog);
           asiairStore.dispatch(ASIAIRActionTypes.SET_ASIAIR_LOG, asiairLog);
           asiairLogUploaded = true;
-          console.log('ASIAIR log uploaded successfully');
         } else if (file.logType === SpecialLogType.PHD) {
           const phdLog: PHDLog = phdLogReader.parseText(file.text);
-          console.log('PHD log parsed:', phdLog);
-          console.log('PHD guiding sessions:', phdLog.guidingSessions?.length || 0);
           phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLog);
           phdLogUploaded = true;
-          console.log('PHD log uploaded successfully');
         }
-
-        console.log(`Upload status - ASIAIR: ${asiairLogUploaded}, PHD: ${phdLogUploaded}`);
         
         if (asiairLogUploaded && phdLogUploaded) {
-          console.log('Both files uploaded, setting files uploaded to true');
           appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
           
           // Navigate to PHD analysis page

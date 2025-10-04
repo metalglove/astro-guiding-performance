@@ -115,7 +115,6 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
     );
 
     if (existingExampleProfile) {
-      console.log('Using existing demo equipment profile:', existingExampleProfile.name);
       commit(EquipmentMutationTypes.SET_ACTIVE_PROFILE, existingExampleProfile.id);
       return existingExampleProfile;
     }
@@ -143,7 +142,6 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
 
     if (existingExampleProfile) {
       // Use existing example profile
-      console.log('Using existing demo equipment profile:', existingExampleProfile.name);
       commit(EquipmentMutationTypes.SET_ACTIVE_PROFILE, existingExampleProfile.id);
       return existingExampleProfile;
     }
@@ -202,7 +200,6 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
     commit(EquipmentMutationTypes.ADD_PROFILE, newProfile);
     commit(EquipmentMutationTypes.SET_ACTIVE_PROFILE, newProfile.id);
 
-    console.log('Created new demo equipment profile:', newProfile.name);
     return newProfile;
   },
 

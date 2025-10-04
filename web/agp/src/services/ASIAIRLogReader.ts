@@ -181,7 +181,6 @@ export default class ASIAIRLogReader {
         const re = /\[Guide\] Settle (Done|Timeout)/g;
         const match = re.exec(currentLine);
         if (match === null) {
-          console.log(currentLine);
           throw new Error(`Unable to parse Guide Settle line (line: ${index}).`);
         }
         const word = match[1];

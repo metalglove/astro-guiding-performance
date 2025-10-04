@@ -21,7 +21,12 @@
    - Enhanced limitations section to include cross-platform correlation considerations
    - Added visual styling and formatting for improved readability
 
-remove debugging statements 
+✅ remove debugging statements 
+   - Removed all development console.log statements from Vue components and services
+   - Kept legitimate console.error statements for user-facing error handling
+   - Preserved service worker console statements for standard PWA functionality
+   - Cleaned up Equipment actions, file uploaders, chart components, and log readers
+   - Maintained proper error logging for clipboard, download, and data loading failures
 
 validate whether the equipment functionality works updating and changing profiles etc
 

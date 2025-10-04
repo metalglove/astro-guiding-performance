@@ -87,7 +87,6 @@ export default defineComponent({
       const fileReader: FileReader = new FileReader();
       fileReader.addEventListener('load', () => {
         fileText.value = fileReader.result as string;
-        console.log(`[${props.logType}] Read text from file (first line): "${fileText.value.split('\n')[0]}"`);
         const textFile = { logType: props.logType, text: fileText.value };
         emit('fileUploaded', textFile);
       });
