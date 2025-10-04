@@ -7,11 +7,20 @@
             <span class="icon">🔭</span>
             Astro Guiding Performance
           </h1>
-          <nav class="app-nav">
-            <router-link to="/" class="nav-link">Home</router-link>
-            <router-link to="/phd" class="nav-link">PHD Analysis</router-link>
-            <router-link to="/equipment" class="nav-link">Equipment</router-link>
-            <router-link to="/methodology" class="nav-link">Methodology</router-link>
+          <button 
+            class="mobile-menu-toggle"
+            @click="isMobileMenuOpen = !isMobileMenuOpen"
+            :class="{ 'active': isMobileMenuOpen }"
+          >
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+            <span class="hamburger-line"></span>
+          </button>
+          <nav class="app-nav" :class="{ 'mobile-open': isMobileMenuOpen }">
+            <router-link to="/" class="nav-link" @click="closeMobileMenu">Home</router-link>
+            <router-link to="/phd" class="nav-link" @click="closeMobileMenu">PHD Analysis</router-link>
+            <router-link to="/equipment" class="nav-link" @click="closeMobileMenu">Equipment</router-link>
+            <router-link to="/methodology" class="nav-link" @click="closeMobileMenu">Methodology</router-link>
           </nav>
         </div>
       </div>
@@ -23,6 +32,51 @@
     </main>
   </div>
 </template>
+
+<script lang="ts">
+import { defineComponent, ref, onMounted, onUnmounted } from 'vue';
+
+export default defineComponent({
+  name: 'App',
+  setup() {
+    const isMobileMenuOpen = ref(false);
+
+    const closeMobileMenu = () => {
+      isMobileMenuOpen.value = false;
+    };
+
+    const handleClickOutside = (event: Event) => {
+      const target = event.target as HTMLElement;
+      const header = document.querySelector('.app-header');
+      
+      if (isMobileMenuOpen.value && header && !header.contains(target)) {
+        closeMobileMenu();
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isMobileMenuOpen.value) {
+        closeMobileMenu();
+      }
+    };
+
+    onMounted(() => {
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
+    });
+
+    onUnmounted(() => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
+    });
+
+    return {
+      isMobileMenuOpen,
+      closeMobileMenu,
+    };
+  },
+});
+</script>
 
 <style>
 :root {
@@ -210,18 +264,113 @@ body {
   background-color: var(--gray-300);
 }
 
+/* Mobile menu toggle button */
+.mobile-menu-toggle {
+  display: none;
+  flex-direction: column;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  gap: 0.25rem;
+  z-index: 101;
+}
+
+.mobile-menu-toggle:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+.hamburger-line {
+  width: 24px;
+  height: 2px;
+  background-color: var(--white);
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(2) {
+  opacity: 0;
+}
+
+.mobile-menu-toggle.active .hamburger-line:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
 @media (max-width: 768px) {
   .header-content {
-    flex-direction: column;
-    text-align: center;
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+  
+  .mobile-menu-toggle {
+    display: flex;
   }
   
   .app-nav {
-    gap: 1rem;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    flex-direction: column;
+    gap: 0;
+    padding: 1rem 0;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 100;
+  }
+  
+  .app-nav.mobile-open {
+    transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
+  }
+  
+  .nav-link {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0;
+    margin: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .nav-link:last-child {
+    border-bottom: none;
+  }
+  
+  .nav-link.router-link-exact-active::after {
+    display: none;
+  }
+  
+  .nav-link.router-link-exact-active {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-left: 4px solid var(--accent-color);
   }
   
   .container {
     padding: 0 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-title {
+    font-size: 1.25rem;
+  }
+  
+  .app-title .icon {
+    font-size: 1.5rem;
+  }
+  
+  .container {
+    padding: 0 0.5rem;
   }
 }
 </style>

@@ -1,8 +1,11 @@
-make recommendation of frame to delete
+make recommendation of frame to delete using timestamps
 
-fix temperature chart
-
-update readme
+✅ fix topbar with responsive design, hamburger menu?
+   - Implemented hamburger menu for mobile devices (≤768px width)
+   - Added slide-down mobile navigation with smooth animations
+   - Interactive features: click hamburger, nav links, outside clicks, or Escape key to close
+   - Responsive breakpoints for desktop, mobile, and small mobile devices
+   - Added accessibility features with keyboard navigation and focus indicators
 
 update methodology if there were any changes
 
@@ -11,6 +14,20 @@ remove debugging statements
 validate whether the equipment functionality works updating and changing profiles etc
 
 for the cdf, note that we filter the data points to only show relevant data points < 2" below the chart
+
+move theory based computations to functions in their own files to directly reference in documentation.
+
+constants (such as physiscs stuff) should be moved to a global file 
+
+update packages
+
+update readme images
+
+update readme
+
+## On Hold
+
+fix temperature chart - waiting for latest version of ASIAIR logging to be checked out
 
 ✅ the auto focus events, the first event should pad the empty space because there is no change in position
    - Fixed AutofocusTimeline.vue to always show "Position Change" field for consistent layout
@@ -28,14 +45,13 @@ move theory based computations to functions in their own files to directly refer
 
 constants (such as physiscs stuff) should be moved to a global file 
 
-load default equipment from a json file? the store should not have them as constants
-
 ✅ double check whether all functions no longer use hardcoded values, only from profile
    - Verified all computation functions now use Equipment store
    - Only valid hardcoded values remaining are preset equipment data and mathematical constants (206.265)
 
-update readme images
-
-fix topbar with responsive design, hamburger menu?
 
 update packages
+
+update readme images
+
+update readme
