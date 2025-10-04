@@ -22,8 +22,6 @@ load default equipment from a json file? the store should not have them as const
 
 double check whether all functions no longer use hardcoded values, only from profile
 
-add equipmentstore to the root store
-
 update readme images
 
 fix topbar with responsive design, hamburger menu?

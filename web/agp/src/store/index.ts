@@ -17,27 +17,30 @@ import { ASIAIRActions, ASIAIRActionTypes } from './modules/ASIAIR/ASIAIR.action
 import { ASIAIRGetters, ASIAIRGetterTypes } from './modules/ASIAIR/ASIAIR.getters';
 import { ASIAIRMutations, ASIAIRMutationTypes } from './modules/ASIAIR/ASIAIR.mutations';
 
-import equipmentModule from './modules/Equipment';
-import { EquipmentState } from './modules/Equipment/Equipment.types';
+import { IEquipmentState, EquipmentStore, equipmentStore } from './modules/Equipment';
+import { EquipmentActions, EquipmentActionTypes } from './modules/Equipment/Equipment.actions';
+import { EquipmentGetters, EquipmentGetterTypes } from './modules/Equipment/Equipment.getters';
+import { EquipmentMutations, EquipmentMutationTypes } from './modules/Equipment/Equipment.mutations';
 
 export interface RootState {
   app: IAppState;
   phd: IPHDState;
   asiair: IASIAIRState;
-  equipment: EquipmentState;
+  equipment: IEquipmentState;
 }
 
 export type RootStore =
   AppStore<Pick<RootState, 'app'>> &
   PHDStore<Pick<RootState, 'phd'>> &
-  ASIAIRStore<Pick<RootState, 'asiair'>>;
+  ASIAIRStore<Pick<RootState, 'asiair'>> &
+  EquipmentStore<Pick<RootState, 'equipment'>>;
 
 export const rootStore = createStore({
   modules: {
     app: appStore,
     phd: phdStore,
     asiair: asiairStore,
-    equipment: equipmentModule,
+    equipment: equipmentStore,
   }
 });
 
@@ -51,7 +54,7 @@ export function useStore() {
 function rootStoreToNamespacedStore<ActionTypes, Actions extends { [key: string]: any }, MutationsTypes, Mutations extends { [key: string]: any }, GetterTypes, Getters extends { [key: string]: any }, StateType>(namespace: string, store: Store<any>) {
   return {
     getters<K extends keyof Getters>(getterType: GetterTypes): ReturnType<Getters[K]> {
-      return store.getters[`${namespace}/${getterType}`];
+      return store.getters[`${namespace}/${getterType}`] as ReturnType<Getters[K]>;
     },
     dispatch<K extends keyof Actions>(payloadWithType: ActionTypes, payload: Parameters<Actions[K]>[1], options?: DispatchOptions): ReturnType<Actions[K]> {
       return store.dispatch(`${namespace}/${payloadWithType}`, payload, options) as ReturnType<Actions[K]>;
@@ -76,4 +79,9 @@ export function usePHDStore() {
 export function useASIAIRStore() {
   const store = vuexUseStore(rootStoreKey);
   return rootStoreToNamespacedStore<ASIAIRActionTypes, ASIAIRActions, ASIAIRMutationTypes, ASIAIRMutations, ASIAIRGetterTypes, ASIAIRGetters, IASIAIRState>('asiair', store);
+}
+
+export function useEquipmentStore() {
+  const store = vuexUseStore(rootStoreKey);
+  return rootStoreToNamespacedStore<EquipmentActionTypes, EquipmentActions, EquipmentMutationTypes, EquipmentMutations, EquipmentGetterTypes, EquipmentGetters, IEquipmentState>('equipment', store);
 }

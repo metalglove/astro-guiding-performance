@@ -11,30 +11,30 @@
     </div>
 
     <div class="equipment-actions">
-      <button 
-        @click="showCreateForm = true" 
+      <button
+        @click="showCreateForm = true"
         class="btn btn-primary"
       >
         <span class="btn-icon">➕</span>
         New Profile
       </button>
-      
-      <button 
-        @click="exportProfiles" 
+
+      <button
+        @click="exportProfiles"
         class="btn btn-secondary"
         :disabled="profiles.length === 0"
       >
         <span class="btn-icon">💾</span>
         Export
       </button>
-      
+
       <label class="btn btn-secondary">
         <span class="btn-icon">📂</span>
         Import
-        <input 
-          type="file" 
-          accept=".json" 
-          @change="handleImport" 
+        <input
+          type="file"
+          accept=".json"
+          @change="handleImport"
           style="display: none;"
         >
       </label>
@@ -48,15 +48,15 @@
           Active Profile: {{ activeProfile.name }}
         </h3>
         <div class="active-profile-actions">
-          <button 
-            @click="editProfile(activeProfile)" 
+          <button
+            @click="editProfile(activeProfile)"
             class="btn btn-sm btn-active-edit"
           >
             <span class="btn-icon">✏️</span>
             Edit
           </button>
-          <button 
-            @click="setActiveProfile(null)" 
+          <button
+            @click="setActiveProfile(null)"
             class="btn btn-sm btn-active-deactivate"
           >
             <span class="btn-icon">⏸️</span>
@@ -64,7 +64,7 @@
           </button>
         </div>
       </div>
-      
+
       <div class="active-profile-specs">
         <div class="spec-group">
           <h4>Telescope</h4>
@@ -73,7 +73,7 @@
             <span class="spec-value">{{ activeProfile.telescope.aperture }}mm f/{{ activeProfile.telescope.focalRatio }}</span>
           </div>
         </div>
-        
+
         <div class="spec-group">
           <h4>Imaging Camera</h4>
           <div class="spec-details">
@@ -81,7 +81,7 @@
             <span class="spec-value">{{ activeProfile.imagingCamera.pixelSize }}μm pixels</span>
           </div>
         </div>
-        
+
         <div v-if="activeProfile.guidingCamera" class="spec-group">
           <h4>Guide Camera</h4>
           <div class="spec-details">
@@ -89,7 +89,7 @@
             <span class="spec-value">{{ activeProfile.guidingCamera.pixelSize }}μm pixels</span>
           </div>
         </div>
-        
+
         <div class="spec-group">
           <h4>Performance</h4>
           <div class="spec-details">
@@ -107,7 +107,7 @@
     <!-- Profile List -->
     <div class="profiles-section">
       <h3 class="section-title">All Profiles ({{ profiles.length }})</h3>
-      
+
       <div v-if="profiles.length === 0" class="empty-state">
         <div class="empty-icon">🔭</div>
         <h4>No Equipment Profiles</h4>
@@ -116,10 +116,10 @@
           Create First Profile
         </button>
       </div>
-      
+
       <div v-else class="profiles-grid">
-        <div 
-          v-for="profile in profiles" 
+        <div
+          v-for="profile in profiles"
           :key="profile.id"
           class="profile-card"
           :class="{ 'active': profile.id === activeProfile?.id }"
@@ -127,23 +127,23 @@
           <div class="profile-header">
             <h4 class="profile-name">{{ profile.name }}</h4>
             <div class="profile-actions">
-              <button 
+              <button
                 v-if="profile.id !== activeProfile?.id"
-                @click="setActiveProfile(profile.id)" 
+                @click="setActiveProfile(profile.id)"
                 class="btn btn-xs btn-activate"
               >
                 <span class="btn-icon">⭐</span>
                 Activate
               </button>
-              <button 
-                @click="editProfile(profile)" 
+              <button
+                @click="editProfile(profile)"
                 class="btn btn-xs btn-edit"
               >
                 <span class="btn-icon">✏️</span>
                 Edit
               </button>
-              <button 
-                @click="deleteProfileWithConfirm(profile)" 
+              <button
+                @click="deleteProfileWithConfirm(profile)"
                 class="btn btn-xs btn-delete"
               >
                 <span class="btn-icon">🗑️</span>
@@ -151,11 +151,11 @@
               </button>
             </div>
           </div>
-          
+
           <div class="profile-description">
             {{ profile.description }}
           </div>
-          
+
           <div class="profile-summary">
             <div class="summary-item">
               <span class="summary-label">Telescope:</span>
@@ -170,7 +170,7 @@
               <span class="summary-value">{{ profile.pixelScale.toFixed(2) }}″/px</span>
             </div>
           </div>
-          
+
           <div class="profile-meta">
             <span class="meta-date">Created {{ formatDate(profile.createdAt) }}</span>
           </div>
@@ -192,53 +192,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import EquipmentProfileForm from '../components/Equipment/EquipmentProfileForm.vue';
-
-// Define a simplified EquipmentProfile interface for now
-interface EquipmentProfile {
-  id: string;
-  name: string;
-  description: string;
-  telescope: {
-    name: string;
-    aperture: number;
-    focalLength: number;
-    focalRatio: number;
-  };
-  imagingCamera: {
-    name: string;
-    pixelSize: number;
-  };
-  guidingCamera?: {
-    name: string;
-    pixelSize: number;
-  };
-  createdAt: Date;
-  pixelScale?: number;
-  fieldOfView?: {
-    width: number;
-    height: number;
-  };
-}
+import { useEquipmentStore } from '../store';
+import { EquipmentProfile } from '../store/modules/Equipment/Equipment.types';
+import { EquipmentActionTypes } from '../store/modules/Equipment/Equipment.actions';
+import { EquipmentGetterTypes } from '../store/modules/Equipment/Equipment.getters';
 
 // Reactive state
 const showCreateForm = ref(false);
 const editingProfile = ref<EquipmentProfile | null>(null);
 
-// Temporary local storage for profiles (replacing store for now)
-const profiles = ref<EquipmentProfile[]>([]);
-const activeProfileId = ref<string | null>(null);
+// Equipment store
+const equipmentStore = useEquipmentStore();
 
-// Computed properties
-const activeProfile = computed(() => {
-  if (!activeProfileId.value) return null;
-  return profiles.value.find((p: EquipmentProfile) => p.id === activeProfileId.value) || null;
-});
+// Computed properties using store
+const profiles = computed(() => equipmentStore.getters(EquipmentGetterTypes.ALL_PROFILES));
+const activeProfile = computed(() => equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PROFILE));
 
 // Methods
 const setActiveProfile = (id: string | null) => {
-  activeProfileId.value = id;
+  equipmentStore.dispatch(EquipmentActionTypes.SET_ACTIVE_PROFILE, id);
 };
 
 const editProfile = (profile: EquipmentProfile) => {
@@ -247,58 +221,25 @@ const editProfile = (profile: EquipmentProfile) => {
 
 const deleteProfileWithConfirm = (profile: EquipmentProfile) => {
   if (confirm(`Are you sure you want to delete "${profile.name}"?`)) {
-    const index = profiles.value.findIndex((p: EquipmentProfile) => p.id === profile.id);
-    if (index !== -1) {
-      profiles.value.splice(index, 1);
-      if (activeProfileId.value === profile.id) {
-        activeProfileId.value = null;
-      }
-    }
+    equipmentStore.dispatch(EquipmentActionTypes.DELETE_PROFILE, profile.id);
   }
 };
 
-const calculateProfileMetrics = (profileData: any): EquipmentProfile => {
-  const profile = { ...profileData };
-  
-  // Calculate pixel scale if telescope and camera are provided
-  if (profile.telescope?.focalLength && profile.imagingCamera?.pixelSize) {
-    profile.pixelScale = (profile.imagingCamera.pixelSize * 206.265) / profile.telescope.focalLength;
-    
-    // Calculate field of view
-    if (profile.imagingCamera.width && profile.imagingCamera.height) {
-      profile.fieldOfView = {
-        width: Number(((profile.imagingCamera.width * profile.pixelScale) / 60).toFixed(1)),
-        height: Number(((profile.imagingCamera.height * profile.pixelScale) / 60).toFixed(1))
-      };
-    }
-  }
-  
-  return profile;
-};
+// Profile calculation is now handled in the store
 
 const handleSaveProfile = (profileData: any) => {
   if (editingProfile.value) {
     // Update existing profile
-    const index = profiles.value.findIndex((p: EquipmentProfile) => p.id === editingProfile.value!.id);
-    if (index !== -1) {
-      const updatedProfile = calculateProfileMetrics({
+    equipmentStore.dispatch(EquipmentActionTypes.UPDATE_PROFILE, {
+      id: editingProfile.value.id,
+      updates: {
         ...profileData,
-        id: editingProfile.value.id,
-        createdAt: editingProfile.value.createdAt,
         updatedAt: new Date()
-      });
-      profiles.value.splice(index, 1, updatedProfile);
-    }
+      }
+    });
   } else {
     // Create new profile
-    const newProfile = calculateProfileMetrics({
-      ...profileData,
-      id: Date.now().toString(),
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    profiles.value.push(newProfile);
-    activeProfileId.value = newProfile.id;
+    equipmentStore.dispatch(EquipmentActionTypes.CREATE_PROFILE, profileData);
   }
   closeForm();
 };
@@ -309,46 +250,21 @@ const closeForm = () => {
 };
 
 const exportProfiles = () => {
-  const data = {
-    profiles: profiles.value,
-    exportDate: new Date().toISOString(),
-    version: '1.0'
-  };
-  
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `equipment-profiles-${new Date().toISOString().split('T')[0]}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  equipmentStore.dispatch(EquipmentActionTypes.EXPORT_PROFILES, undefined);
 };
 
 const handleImport = async (event: Event) => {
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (!file) return;
-  
+
   try {
-    const text = await file.text();
-    const data = JSON.parse(text);
-    if (data.profiles && Array.isArray(data.profiles)) {
-      data.profiles.forEach((profile: EquipmentProfile) => {
-        const importedProfile = {
-          ...profile,
-          id: `${profile.id}-imported-${Date.now()}`,
-          updatedAt: new Date()
-        };
-        profiles.value.push(importedProfile);
-      });
-      alert(`Successfully imported ${data.profiles.length} profiles!`);
-    } else {
-      alert('Invalid file format');
-    }
+    const count = await equipmentStore.dispatch(EquipmentActionTypes.IMPORT_PROFILES, file);
+    alert(`Successfully imported ${count} profiles!`);
   } catch (error: any) {
     alert(`Import failed: ${error.message}`);
   }
-  
+
   // Reset file input
   target.value = '';
 };
@@ -358,34 +274,7 @@ const formatDate = (date: Date | string) => {
   return d.toLocaleDateString();
 };
 
-// Initialize with default profile if none exists
-onMounted(() => {
-  if (profiles.value.length === 0) {
-    // Create a default profile with the user's Newtonian telescope
-    const defaultProfile = {
-      name: 'My Setup',
-      description: 'Newtonian 800/203 F4 setup',
-      telescope: {
-        name: 'Newtonian 800/203 F4',
-        aperture: 203,
-        focalLength: 800,
-        focalRatio: 4.0
-      },
-      imagingCamera: {
-        name: 'ASI 2600 MM Pro',
-        pixelSize: 3.76,
-        width: 6248,
-        height: 4176
-      },
-      guidingCamera: {
-        name: 'ASI 224 MC',
-        pixelSize: 3.75
-      }
-    };
-    
-    handleSaveProfile(defaultProfile);
-  }
-});
+// The store already has preset equipment available for creating profiles
 </script>
 
 <style scoped>
@@ -792,32 +681,32 @@ onMounted(() => {
   .equipment-manager {
     padding: 16px;
   }
-  
+
   .equipment-actions {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .active-profile-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .active-profile-specs {
     grid-template-columns: 1fr;
   }
-  
+
   .profiles-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .profile-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .profile-actions {
     width: 100%;
     justify-content: flex-end;

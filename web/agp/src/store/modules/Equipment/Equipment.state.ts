@@ -1,6 +1,7 @@
-import { EquipmentState, TelescopeSpecs, CameraSpecs, MountSpecs } from './Equipment.types';
+import { getItem, setItem } from '@/utilities/LocalStorageUtilities';
+import { TelescopeSpecs, CameraSpecs, MountSpecs, EquipmentProfile } from './Equipment.types';
 
-// Preset telescopes with common astrophotography scopes
+// Default telescope presets
 const presetTelescopes: TelescopeSpecs[] = [
   {
     id: 'newtonian-800-203-f4',
@@ -144,10 +145,54 @@ const presetMounts: MountSpecs[] = [
   }
 ];
 
-export const equipmentState: EquipmentState = {
-  profiles: [],
-  activeProfileId: null,
-  presetTelescopes,
-  presetCameras,
-  presetMounts
-};
+export interface IEquipmentState {
+  profiles: EquipmentProfile[];
+  activeProfileId: string | null;
+  presetTelescopes: TelescopeSpecs[];
+  presetCameras: CameraSpecs[];
+  presetMounts: MountSpecs[];
+}
+
+class EquipmentState implements IEquipmentState {
+  constructor() {
+    // Initialize with empty arrays if no data exists in localStorage
+    if (!getItem<EquipmentProfile[]>('EquipmentState.profiles')) {
+      setItem('EquipmentState.profiles', []);
+    }
+    if (!getItem<string | null>('EquipmentState.activeProfileId')) {
+      setItem('EquipmentState.activeProfileId', null);
+    }
+  }
+
+  public get profiles(): EquipmentProfile[] {
+    const stored = getItem<EquipmentProfile[]>('EquipmentState.profiles');
+    return stored || [];
+  }
+
+  public set profiles(value: EquipmentProfile[]) {
+    setItem('EquipmentState.profiles', value);
+  }
+
+  public get activeProfileId(): string | null {
+    return getItem<string | null>('EquipmentState.activeProfileId') || null;
+  }
+
+  public set activeProfileId(value: string | null) {
+    setItem('EquipmentState.activeProfileId', value);
+  }
+
+  // Presets don't need to be persisted as they're static
+  public get presetTelescopes(): TelescopeSpecs[] {
+    return presetTelescopes;
+  }
+
+  public get presetCameras(): CameraSpecs[] {
+    return presetCameras;
+  }
+
+  public get presetMounts(): MountSpecs[] {
+    return presetMounts;
+  }
+}
+
+export const equipmentState = new EquipmentState();

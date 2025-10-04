@@ -51,9 +51,9 @@
               class="form-select"
             >
               <option value="">Custom Telescope</option>
-              <option 
-                v-for="preset in presetTelescopes" 
-                :key="preset.id" 
+              <option
+                v-for="preset in presetTelescopes"
+                :key="preset.id"
                 :value="preset.id"
               >
                 {{ preset.name }}
@@ -156,9 +156,9 @@
               class="form-select"
             >
               <option value="">Custom Camera</option>
-              <option 
-                v-for="preset in imagingCameras" 
-                :key="preset.id" 
+              <option
+                v-for="preset in imagingCameras"
+                :key="preset.id"
                 :value="preset.id"
               >
                 {{ preset.name }}
@@ -232,7 +232,7 @@
             Include guide camera specifications
           </label>
         </div>
-        
+
         <div v-if="hasGuideCamera" class="form-grid">
           <div class="form-group">
             <label for="guide-camera-preset">Preset</label>
@@ -243,9 +243,9 @@
               class="form-select"
             >
               <option value="">Custom Camera</option>
-              <option 
-                v-for="preset in guidingCameras" 
-                :key="preset.id" 
+              <option
+                v-for="preset in guidingCameras"
+                :key="preset.id"
                 :value="preset.id"
               >
                 {{ preset.name }}
@@ -290,9 +290,9 @@
               class="form-select"
             >
               <option value="">Custom Mount</option>
-              <option 
-                v-for="preset in presetMounts" 
-                :key="preset.id" 
+              <option
+                v-for="preset in presetMounts"
+                :key="preset.id"
                 :value="preset.id"
               >
                 {{ preset.name }}
@@ -363,8 +363,9 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import { useStore } from 'vuex';
-import { EquipmentProfile, TelescopeSpecs, CameraSpecs, MountSpecs } from '../../store/modules/Equipment/Equipment.types';
+import { useEquipmentStore } from '../../store';
+import { EquipmentProfile, TelescopeSpecs, CameraSpecs, MountSpecs, AccessorySpecs } from '../../store/modules/Equipment/Equipment.types';
+import { EquipmentGetterTypes } from '../../store/modules/Equipment/Equipment.getters';
 
 interface Props {
   profile?: EquipmentProfile | null;
@@ -373,14 +374,14 @@ interface Props {
 const props = defineProps<Props>();
 const emit = defineEmits(['save', 'cancel']);
 
-const store = useStore();
+const equipmentStore = useEquipmentStore();
 
 // Computed properties for presets
-const presetTelescopes = computed(() => store.getters['equipment/presetTelescopes']);
-const presetCameras = computed(() => store.getters['equipment/presetCameras']);
-const presetMounts = computed(() => store.getters['equipment/presetMounts']);
-const imagingCameras = computed(() => store.getters['equipment/imagingCameras']);
-const guidingCameras = computed(() => store.getters['equipment/guidingCameras']);
+const presetTelescopes = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_TELESCOPES));
+const presetCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_CAMERAS));
+const presetMounts = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_MOUNTS));
+const imagingCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.IMAGING_CAMERAS));
+const guidingCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.GUIDING_CAMERAS));
 
 // Form state
 const selectedTelescopePreset = ref('');
@@ -430,31 +431,31 @@ const formData = ref({
     type: 'equatorial' as const,
     payload: 13.6
   } as MountSpecs,
-  accessories: []
+  accessories: [] as AccessorySpecs[]
 });
 
 // Calculated values
 const calculatedValues = computed(() => {
   const telescope = formData.value.telescope;
   const camera = formData.value.imagingCamera;
-  
+
   if (!telescope.focalLength || !camera.pixelSize) {
     return {};
   }
-  
+
   const pixelScale = (camera.pixelSize * 206.265) / telescope.focalLength;
   const fieldOfView = {
     width: Number(((camera.width * pixelScale) / 60).toFixed(1)),
     height: Number(((camera.height * pixelScale) / 60).toFixed(1))
   };
-  
+
   // Theoretical resolution (Dawes limit)
   const apertureInches = telescope.aperture / 25.4;
   const resolution = Number((4.56 / apertureInches).toFixed(2));
-  
+
   // Sampling ratio
   const samplingRatio = Number((pixelScale / (resolution / 2)).toFixed(1));
-  
+
   return {
     pixelScale: Number(pixelScale.toFixed(2)),
     fieldOfView,
@@ -518,7 +519,7 @@ const handleSubmit = () => {
     ...formData.value,
     guidingCamera: hasGuideCamera.value ? formData.value.guidingCamera : undefined
   };
-  
+
   emit('save', profileData);
 };
 
@@ -534,17 +535,17 @@ onMounted(() => {
       mount: { ...props.profile.mount },
       accessories: props.profile.accessories ? [...props.profile.accessories] : []
     };
-    
+
     hasGuideCamera.value = !!props.profile.guidingCamera;
   } else {
     // Set default Newtonian 800/203 F4 for new profiles
     selectedTelescopePreset.value = 'newtonian-800-203-f4';
     loadTelescopePreset();
-    
+
     // Set default ASI 2600 MM Pro
     selectedImagingCameraPreset.value = 'asi2600mm-pro';
     loadImagingCameraPreset();
-    
+
     // Set default mount
     selectedMountPreset.value = 'celestron-avx';
     loadMountPreset();
@@ -762,15 +763,15 @@ onMounted(() => {
   .equipment-form {
     padding: 20px;
   }
-  
+
   .form-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .calculated-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .form-actions {
     flex-direction: column;
   }
