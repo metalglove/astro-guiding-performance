@@ -90,10 +90,6 @@ import { EquipmentActionTypes } from '../../store/modules/Equipment/Equipment.ac
 export default defineComponent({
   name: 'FileUploader',
   emits: ['logsUploaded'],
-  data: () => ({
-    ASIAIR: SpecialLogType.ASIAIR,
-    PHD: SpecialLogType.PHD,
-  }),
   components: {
     FileUpload,
   },
@@ -202,6 +198,8 @@ export default defineComponent({
       onFileUploaded,
       loadExampleData,
       isLoadingExample,
+      ASIAIR: SpecialLogType.ASIAIR,
+      PHD: SpecialLogType.PHD,
     };
   },
 });

@@ -132,8 +132,8 @@ export default defineComponent({
       }
     });
     
-    const phdLog = computed(() => phdStore.getters(PHDGetterTypes.GET_PHD_LOG));
-    const asiairLog = computed(() => asiairStore.getters(ASIAIRGetterTypes.GET_ASIAIR_LOG));
+    const phdLog = computed(() => phdStore.getters(PHDGetterTypes.GET_PHD_LOG) as PHDLog | null);
+    const asiairLog = computed(() => asiairStore.getters(ASIAIRGetterTypes.GET_ASIAIR_LOG) as ASIAIRLog | null);
 
     const selectedGuidingSession = ref<GuidingSession | null>(null);
     const isLoadingExample = ref(false);
@@ -172,7 +172,7 @@ export default defineComponent({
 
     // Expose clearData to window for debugging
     if (typeof window !== 'undefined') {
-      (window as any).clearData = clearData;
+      (window as { clearData?: () => void }).clearData = clearData;
     }
 
     const loadExampleData = async () => {
@@ -246,7 +246,7 @@ export default defineComponent({
     const flattenedAutoFocusEvents = computed(() => {
       if (!asiairLog.value || !asiairLog.value.autoruns) return [];
       
-      return asiairLog.value.autoruns.flatMap((autorun: any) => 
+      return asiairLog.value.autoruns.flatMap((autorun: { autoFocusEvents?: unknown[] }) => 
         autorun.autoFocusEvents || []
       );
     });

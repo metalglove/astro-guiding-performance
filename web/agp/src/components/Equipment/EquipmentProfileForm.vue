@@ -378,7 +378,6 @@ const equipmentStore = useEquipmentStore();
 
 // Computed properties for presets
 const presetTelescopes = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_TELESCOPES));
-const presetCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_CAMERAS));
 const presetMounts = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_MOUNTS));
 const imagingCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.IMAGING_CAMERAS));
 const guidingCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.GUIDING_CAMERAS));
@@ -507,7 +506,7 @@ const loadMountPreset = () => {
 // Handle guide camera checkbox
 watch(hasGuideCamera, (newValue) => {
   if (!newValue) {
-    formData.value.guidingCamera = undefined as any;
+    formData.value.guidingCamera = undefined;
   } else if (!formData.value.guidingCamera) {
     formData.value.guidingCamera = createDefaultCamera('guiding');
   }

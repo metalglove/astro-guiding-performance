@@ -1,5 +1,5 @@
 import { ActionTree, ActionContext } from 'vuex';
-import { EquipmentProfile, TelescopeSpecs, CameraSpecs, MountSpecs } from './Equipment.types';
+import { EquipmentProfile, CameraSpecs } from './Equipment.types';
 import { RootState } from '../../index';
 import { EquipmentMutations, EquipmentMutationTypes } from './Equipment.mutations';
 import { IEquipmentState } from './Equipment.state';
@@ -41,7 +41,7 @@ export interface EquipmentActions {
   ): void;
   [EquipmentActionTypes.CREATE_PROFILE_FROM_LOGS](
     context: AugmentedEquipmentActionContext,
-    logData: any
+    logData: { pixelScale?: number; telescope?: unknown; camera?: unknown; phdLog?: string }
   ): EquipmentProfile;
   [EquipmentActionTypes.ENSURE_EXAMPLE_PROFILE](
     context: AugmentedEquipmentActionContext
@@ -135,7 +135,7 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
   },
 
   // Create profile from log data
-  [EquipmentActionTypes.CREATE_PROFILE_FROM_LOGS]({ commit, state, dispatch }, logData: any) {
+  [EquipmentActionTypes.CREATE_PROFILE_FROM_LOGS]({ commit, state }, logData: { pixelScale?: number; telescope?: unknown; camera?: unknown; phdLog?: string }) {
     // Check if an example profile already exists
     const existingExampleProfile = state.profiles.find(profile => 
       profile.description === 'Demo equipment profile - ASI 2600 MM + Newtonian 800/203 F4'

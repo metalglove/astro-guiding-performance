@@ -125,15 +125,15 @@ const scaledData = computed(() => {
   if (!selectedGuidingSession.value || !selectedGuidingSession.value.guidingFrames) {
     return [];
   }
-  
+
   const session = selectedGuidingSession.value;
   const frames = session.guidingFrames;
   const pixelScale = session.pixelScale;
-  
+
   return frames.map((frame: GuidingFrame, index: number): ProcessedDataPoint => {
     let x = frame.dx; // camera axes
     let y = frame.dy; // camera axes
-    
+
     // Apply scaling based on selected scale
     if (selectedScale.value === 'Arc-secs/pixel' && pixelScale) {
       x = x * pixelScale;
@@ -145,7 +145,7 @@ const scaledData = computed(() => {
         y = y * pixelScale;
       }
     }
-    
+
     return {
       x,
       y,
@@ -161,22 +161,22 @@ const scaledData = computed(() => {
 const sampledData = computed((): ProcessedDataPoint[] => {
   const data = scaledData.value;
   if (!data || data.length === 0) return [];
-  
+
   const maxPoints = 2000;
   if (data.length <= maxPoints) return data;
-  
+
   const step = Math.floor(data.length / maxPoints);
   const sampled: ProcessedDataPoint[] = [];
-  
+
   for (let i = 0; i < data.length; i += step) {
     sampled.push(data[i]);
   }
-  
+
   // Always include the last point
   if (sampled.length > 0 && sampled[sampled.length - 1] !== data[data.length - 1]) {
     sampled.push(data[data.length - 1]);
   }
-  
+
   return sampled;
 });
 
@@ -184,11 +184,20 @@ const sampledData = computed((): ProcessedDataPoint[] => {
 const chartData = computed(() => {
   const data = sampledData.value;
   if (!data || data.length === 0) return { datasets: [] };
-  
+
   const labels = data.map((d: ProcessedDataPoint) => new Date(d.timestamp).toLocaleTimeString());
-  
-  let datasets: any[] = [];
-  
+
+  let datasets: Array<{
+    label: string;
+    data: number[];
+    borderColor: string;
+    backgroundColor: string;
+    borderWidth: number;
+    tension: number;
+    pointRadius: number;
+    pointHoverRadius?: number;
+  }> = [];
+
   if (selectedAxes.value.code === 0 || selectedAxes.value.code === 1) {
     datasets.push({
       label: 'RA Error',
@@ -200,7 +209,7 @@ const chartData = computed(() => {
       tension: 0.1
     });
   }
-  
+
   if (selectedAxes.value.code === 0 || selectedAxes.value.code === 2) {
     datasets.push({
       label: 'Dec Error',
@@ -212,7 +221,7 @@ const chartData = computed(() => {
       tension: 0.1
     });
   }
-  
+
   return { labels, datasets };
 });
 
@@ -262,7 +271,7 @@ const chartDataOptions = computed(() => ({
 const scatterChartData = computed(() => {
   const data = sampledData.value;
   if (!data || data.length === 0) return { datasets: [] };
-  
+
   return {
     datasets: [{
       label: 'RA vs Dec Error',
@@ -278,11 +287,11 @@ const scatterChartData = computed(() => {
 const scatterChartDataOptions = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return {};
-  
+
   const maxX = Math.max(...data.map((d: ProcessedDataPoint) => Math.abs(d.x)));
   const maxY = Math.max(...data.map((d: ProcessedDataPoint) => Math.abs(d.y)));
   const maxVal = Math.max(maxX, maxY);
-  
+
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -329,27 +338,36 @@ const scatterChartDataOptions = computed(() => {
 const specialChartData = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return { datasets: [] };
-  
+
   // Filter errors to focus on 0-2 range for better visualization
   const allErrors = data.map((d: ProcessedDataPoint) => d.totalXY).sort((a: number, b: number) => a - b);
   const maxRelevantError = Math.min(2.0, Math.max(...allErrors));
   const relevantErrors = allErrors.filter((error: number) => error <= maxRelevantError);
-  
-  const cdfData = relevantErrors.map((error: number, index: number) => ({
+
+  const cdfData = relevantErrors.map((error: number) => ({
     x: error,
     y: (allErrors.findIndex((e: number) => e > error) === -1 ? allErrors.length : allErrors.findIndex((e: number) => e > error)) / allErrors.length * 100
   }));
-  
+
   // Calculate thresholds using active equipment profile
   const pixelScale = activePixelScale.value; // arcsec/pixel from Equipment store
   const perfectThreshold = 0.5 * pixelScale; // 0.5 pixels tolerance
   const goodThreshold = 1.0 * pixelScale; // 1.0 pixels tolerance
-  
+
   // Find percentages at thresholds
   const perfectPercentage = allErrors.filter((e: number) => e <= perfectThreshold).length / allErrors.length * 100;
   const goodPercentage = allErrors.filter((e: number) => e <= goodThreshold).length / allErrors.length * 100;
-  
-  const datasets: any[] = [{
+
+  const datasets: Array<{
+    label: string;
+    data: Array<{x: number; y: number}>;
+    borderColor: string;
+    backgroundColor: string;
+    borderWidth: number;
+    pointRadius: number;
+    tension: number;
+    fill: boolean;
+  }> = [{
     label: 'Cumulative Distribution',
     data: cdfData,
     borderColor: '#10b981',
@@ -359,7 +377,7 @@ const specialChartData = computed(() => {
     tension: 0,
     fill: true
   }];
-  
+
   // Add threshold lines only if they're within the visible range
   if (perfectThreshold <= maxRelevantError) {
     datasets.push({
@@ -377,7 +395,7 @@ const specialChartData = computed(() => {
       fill: false
     });
   }
-  
+
   if (goodThreshold <= maxRelevantError) {
     datasets.push({
       label: `Good Threshold (${goodThreshold.toFixed(3)}")`,
@@ -394,7 +412,7 @@ const specialChartData = computed(() => {
       fill: false
     });
   }
-  
+
   return { datasets };
 });
 
@@ -454,15 +472,15 @@ const rmsStats = computed(() => {
   if (!data || data.length === 0) {
     return { total: 0, ra: 0, dec: 0 };
   }
-  
+
   const raValues = data.map((d: ProcessedDataPoint) => d.x);
   const decValues = data.map((d: ProcessedDataPoint) => d.y);
   const totalValues = data.map((d: ProcessedDataPoint) => d.totalXY);
-  
+
   const raRms = Math.sqrt(raValues.reduce((sum: number, val: number) => sum + val * val, 0) / raValues.length);
   const decRms = Math.sqrt(decValues.reduce((sum: number, val: number) => sum + val * val, 0) / decValues.length);
   const totalRms = Math.sqrt(totalValues.reduce((sum: number, val: number) => sum + val * val, 0) / totalValues.length);
-  
+
   return {
     total: totalRms,
     ra: raRms,
@@ -473,7 +491,7 @@ const rmsStats = computed(() => {
 const maxError = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return 0;
-  
+
   return Math.max(...data.map((d: ProcessedDataPoint) => d.totalXY));
 });
 
@@ -483,14 +501,14 @@ const dataPointsCount = computed(() => scaledData.value?.length || 0);
 const perfectDataPercentage = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return 0;
-  
+
   const pixelScale = activePixelScale.value; // arcsec/pixel from Equipment store
   const perfectThreshold = 0.5 * pixelScale; // 0.5 pixels tolerance
-  
-  const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) => 
+
+  const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) =>
     point.totalXY <= perfectThreshold
   ).length;
-  
+
   return (pointsWithinThreshold / data.length) * 100;
 });
 
@@ -498,27 +516,24 @@ const perfectDataPercentage = computed(() => {
 const goodDataPercentage = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return 0;
-  
+
   const pixelScale = activePixelScale.value; // arcsec/pixel from Equipment store
   const goodThreshold = 1.0 * pixelScale; // 1.0 pixels tolerance
-  
-  const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) => 
+
+  const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) =>
     point.totalXY <= goodThreshold
   ).length;
-  
+
   return (pointsWithinThreshold / data.length) * 100;
 });
-
-// Keep the original for backward compatibility
-const usableDataPercentage = computed(() => goodDataPercentage.value);
 
 const sessionDuration = computed(() => {
   const data = scaledData.value;
   if (!data || data.length < 2) return 0;
-  
+
   const startTime = new Date(data[0].timestamp).getTime();
   const endTime = new Date(data[data.length - 1].timestamp).getTime();
-  
+
   return (endTime - startTime) / 1000; // Convert to seconds
 });
 
@@ -533,7 +548,7 @@ const scaleChanged = (newScale: string) => {
   selectedScale.value = newScale;
 };
 
-const handleAxesChanged = (axes: any) => {
+const handleAxesChanged = (axes: { code: number; name: string }) => {
   selectedAxes.value = axes;
 };
 
@@ -594,17 +609,17 @@ onMounted(() => {
   .guiding-charts {
     padding: 0 12px;
   }
-  
+
   .charts-title {
     font-size: 24px;
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .charts-icon {
     font-size: 28px;
   }
-  
+
   .charts-subtitle {
     font-size: 14px;
   }

@@ -1,5 +1,5 @@
-import { computed, InjectionKey } from 'vue';
-import { CommitOptions, createStore, DispatchOptions, Store, mapGetters } from 'vuex';
+import { InjectionKey } from 'vue';
+import { CommitOptions, createStore, DispatchOptions, Store } from 'vuex';
 import { useStore as vuexUseStore } from 'vuex';
 
 import { IAppState, AppStore, appStore } from './modules/App';
@@ -21,12 +21,14 @@ import { IEquipmentState, EquipmentStore, equipmentStore } from './modules/Equip
 import { EquipmentActions, EquipmentActionTypes } from './modules/Equipment/Equipment.actions';
 import { EquipmentGetters, EquipmentGetterTypes } from './modules/Equipment/Equipment.getters';
 import { EquipmentMutations, EquipmentMutationTypes } from './modules/Equipment/Equipment.mutations';
+// No need to import specific types - they're inferred from ReturnType<Getters[T]>
 
 export interface RootState {
   app: IAppState;
   phd: IPHDState;
   asiair: IASIAIRState;
   equipment: IEquipmentState;
+  [key: string]: any;
 }
 
 export type RootStore =
@@ -46,42 +48,75 @@ export const rootStore = createStore({
 
 export const rootStoreKey: InjectionKey<Store<RootState>> = Symbol()
 
-export function useStore() {
+export function useStore(): Store<RootState> {
   const store = vuexUseStore(rootStoreKey);
   return store;
 }
 
-function rootStoreToNamespacedStore<ActionTypes, Actions extends { [key: string]: any }, MutationsTypes, Mutations extends { [key: string]: any }, GetterTypes, Getters extends { [key: string]: any }, StateType>(namespace: string, store: Store<any>) {
+function rootStoreToNamespacedStore<ActionTypes, Actions, MutationsTypes, Mutations, GetterTypes, Getters, StateType>(
+  namespace: string,
+  store: Store<RootState>
+) {
   return {
-    getters<K extends keyof Getters>(getterType: GetterTypes): ReturnType<Getters[K]> {
-      return store.getters[`${namespace}/${getterType}`] as ReturnType<Getters[K]>;
+    getters: (getterType: GetterTypes): any => {
+      return store.getters[`${namespace}/${getterType}`];
     },
-    dispatch<K extends keyof Actions>(payloadWithType: ActionTypes, payload: Parameters<Actions[K]>[1], options?: DispatchOptions): ReturnType<Actions[K]> {
-      return store.dispatch(`${namespace}/${payloadWithType}`, payload, options) as ReturnType<Actions[K]>;
+    dispatch: (payloadWithType: ActionTypes, payload?: any, options?: DispatchOptions): Promise<any> => {
+      return store.dispatch(`${namespace}/${payloadWithType}`, payload, options);
     },
-    commit<K extends keyof Mutations>(payloadWithType: MutationsTypes, payload: Parameters<Mutations[K]>[1], options?: CommitOptions): void {
+    commit: (payloadWithType: MutationsTypes, payload?: any, options?: CommitOptions): void => {
       return store.commit(`${namespace}/${payloadWithType}`, payload, options)
     },
     state: store.state[namespace] as StateType
   };
 }
 
-export function useAppStore() {
+// Create specific typed store interfaces with automatic type inference
+interface AppStoreInterface {
+  getters<T extends AppGetterTypes>(getterType: T): T extends keyof AppGetters ? ReturnType<AppGetters[T]> : any;
+  dispatch(actionType: AppActionTypes, payload?: any): Promise<any>;
+  commit(mutationType: AppMutationTypes, payload?: any): void;
+  state: IAppState;
+}
+
+interface PHDStoreInterface {
+  getters<T extends PHDGetterTypes>(getterType: T): T extends keyof PHDGetters ? ReturnType<PHDGetters[T]> : any;
+  dispatch(actionType: PHDActionTypes, payload?: any): Promise<any>;
+  commit(mutationType: PHDMutationTypes, payload?: any): void;
+  state: IPHDState;
+}
+
+interface ASIAIRStoreInterface {
+  getters<T extends ASIAIRGetterTypes>(getterType: T): T extends keyof ASIAIRGetters ? ReturnType<ASIAIRGetters[T]> : any;
+  dispatch(actionType: ASIAIRActionTypes, payload?: any): Promise<any>;
+  commit(mutationType: ASIAIRMutationTypes, payload?: any): void;
+  state: IASIAIRState;
+}
+
+interface EquipmentStoreInterface {
+  // Attempt to use ReturnType<Getters[K]> - this would be ideal but causes TypeScript errors
+  getters<T extends EquipmentGetterTypes>(getterType: T): T extends keyof EquipmentGetters ? ReturnType<EquipmentGetters[T]> : any;
+  dispatch(actionType: EquipmentActionTypes, payload?: any): Promise<any>;
+  commit(mutationType: EquipmentMutationTypes, payload?: any): void;
+  state: IEquipmentState;
+}
+
+export function useAppStore(): AppStoreInterface {
   const store = vuexUseStore(rootStoreKey);
   return rootStoreToNamespacedStore<AppActionTypes, AppActions, AppMutationTypes, AppMutations, AppGetterTypes, AppGetters, IAppState>('app', store);
 }
 
-export function usePHDStore() {
+export function usePHDStore(): PHDStoreInterface {
   const store = vuexUseStore(rootStoreKey);
   return rootStoreToNamespacedStore<PHDActionTypes, PHDActions, PHDMutationTypes, PHDMutations, PHDGetterTypes, PHDGetters, IPHDState>('phd', store);
 }
 
-export function useASIAIRStore() {
+export function useASIAIRStore(): ASIAIRStoreInterface {
   const store = vuexUseStore(rootStoreKey);
   return rootStoreToNamespacedStore<ASIAIRActionTypes, ASIAIRActions, ASIAIRMutationTypes, ASIAIRMutations, ASIAIRGetterTypes, ASIAIRGetters, IASIAIRState>('asiair', store);
 }
 
-export function useEquipmentStore() {
+export function useEquipmentStore(): EquipmentStoreInterface {
   const store = vuexUseStore(rootStoreKey);
   return rootStoreToNamespacedStore<EquipmentActionTypes, EquipmentActions, EquipmentMutationTypes, EquipmentMutations, EquipmentGetterTypes, EquipmentGetters, IEquipmentState>('equipment', store);
 }
