@@ -10,6 +10,42 @@
       </p>
     </div>
 
+    <!-- Camera Selection -->
+    <div class="camera-selection">
+      <div class="camera-selection-header">
+        <h4 class="camera-selection-title">
+          <span class="camera-icon">📷</span>
+          Main Camera Selection
+        </h4>
+        <p class="camera-selection-subtitle">
+          Select your imaging camera for pixel-well analysis
+        </p>
+      </div>
+      
+      <div class="camera-dropdown">
+        <select v-model="selectedCamera" @change="updateCameraSpecs" class="camera-select">
+          <option value="asi2600mm">ASI 2600 MM Pro</option>
+          <option value="guide-camera">Use Guide Camera ({{ guideCameraInfo }})</option>
+          <option value="custom">Custom Camera</option>
+        </select>
+      </div>
+
+      <div v-if="selectedCamera === 'custom'" class="custom-camera-inputs">
+        <div class="input-group">
+          <label>Pixel Size (μm):</label>
+          <input v-model.number="customPixelSize" type="number" step="0.1" min="1" max="50" />
+        </div>
+        <div class="input-group">
+          <label>Sensor Width (pixels):</label>
+          <input v-model.number="customWidth" type="number" min="1000" max="10000" />
+        </div>
+        <div class="input-group">
+          <label>Sensor Height (pixels):</label>
+          <input v-model.number="customHeight" type="number" min="1000" max="10000" />
+        </div>
+      </div>
+    </div>
+
     <div class="statistics-grid">
       <div class="stat-card rms-card">
         <div class="stat-header">
@@ -73,11 +109,73 @@
           <div class="stat-note">Total measurements</div>
         </div>
       </div>
+
+      <!-- Perfect Data Analysis (only show in arcsecond mode) -->
+      <div v-if="isArcsecondScale" class="stat-card perfect-card">
+        <div class="stat-header">
+          <span class="stat-icon">🎯</span>
+          <span class="stat-label">Perfect Data</span>
+        </div>
+        <div class="stat-values">
+          <div class="stat-primary">
+            <span class="stat-value">{{ (props.perfectDataPercentage || 0).toFixed(1) }}</span>
+            <span class="stat-unit">%</span>
+          </div>
+          <div class="stat-note">Within 0.5px ({{ perfectThreshold.toFixed(3) }}″)</div>
+        </div>
+      </div>
+
+      <div v-if="isArcsecondScale" class="stat-card good-card">
+        <div class="stat-header">
+          <span class="stat-icon">✨</span>
+          <span class="stat-label">Good Data</span>
+        </div>
+        <div class="stat-values">
+          <div class="stat-primary">
+            <span class="stat-value">{{ (props.goodDataPercentage || 0).toFixed(1) }}</span>
+            <span class="stat-unit">%</span>
+          </div>
+          <div class="stat-note">Within 1.0px ({{ goodThreshold.toFixed(3) }}″)</div>
+        </div>
+      </div>
+
+      <div class="stat-card camera-info-card">
+        <div class="stat-header">
+          <span class="stat-icon">📷</span>
+          <span class="stat-label">Camera Specs</span>
+        </div>
+        <div class="stat-values">
+          <div class="camera-specs">
+            <div class="spec-row">
+              <span class="spec-label">Model:</span>
+              <span class="spec-value">{{ currentCameraSpecs.name }}</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Pixel Size:</span>
+              <span class="spec-value">{{ currentCameraSpecs.pixelSize }}μm</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Resolution:</span>
+              <span class="spec-value">{{ currentCameraSpecs.width }}×{{ currentCameraSpecs.height }}</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Binning:</span>
+              <span class="spec-value">{{ binning }}×{{ binning }}</span>
+            </div>
+            <div class="spec-row">
+              <span class="spec-label">Scale:</span>
+              <span class="spec-value">{{ calculatedPixelScale.toFixed(3) }}″/px</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
+
 interface Props {
   rmsStats: {
     total: number;
@@ -87,9 +185,125 @@ interface Props {
   maxError: number;
   sessionDuration: number;
   dataPointsCount: number;
+  pixelScale?: number;
+  binning?: number;
+  selectedScale?: string;
+  perfectDataPercentage?: number;
+  goodDataPercentage?: number;
+  // Guide camera info (from PHD2 log)
+  guideCameraPixelSize?: number;
+  guideCameraWidth?: number;
+  guideCameraHeight?: number;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+// Camera selection state
+const selectedCamera = ref('asi2600mm');
+const customPixelSize = ref(3.8);
+const customWidth = ref(6248);
+const customHeight = ref(4176);
+
+// Using static camera database for now to avoid store injection issues
+// Equipment store integration will be added in a future update
+
+// Camera database - simplified without store integration for now
+const cameraDatabase = {
+  'asi2600mm': {
+    name: 'ASI 2600 MM Pro',
+    pixelSize: 3.76,
+    width: 6248,
+    height: 4176,
+    description: 'ZWO ASI 2600 MM Pro Monochrome'
+  },
+  'asi2600mm-pro': {
+    name: 'ASI 2600 MM Pro',
+    pixelSize: 3.76,
+    width: 6248,
+    height: 4176,
+    description: 'ZWO ASI 2600 MM Pro Monochrome'
+  },
+  'asi224mc': {
+    name: 'ASI 224 MC',
+    pixelSize: 3.75,
+    width: 1304,
+    height: 976,
+    description: 'ZWO ASI 224 MC Guide Camera'
+  }
+};
+
+// Computed properties
+const guideCameraInfo = computed(() => {
+  if (props.guideCameraPixelSize) {
+    return `${props.guideCameraPixelSize}μm`;
+  }
+  return 'Unknown';
+});
+
+const currentCameraSpecs = computed(() => {
+  switch (selectedCamera.value) {
+    case 'asi2600mm':
+      return cameraDatabase['asi2600mm'];
+    case 'guide-camera':
+      return {
+        name: 'Guide Camera',
+        pixelSize: props.guideCameraPixelSize || 3.8,
+        width: props.guideCameraWidth || 1280,
+        height: props.guideCameraHeight || 960
+      };
+    case 'custom':
+      return {
+        name: 'Custom Camera',
+        pixelSize: customPixelSize.value,
+        width: customWidth.value,
+        height: customHeight.value
+      };
+    default:
+      return cameraDatabase['asi2600mm'];
+  }
+});
+
+// Perfect threshold: 0.5 pixels (very tight tolerance)
+const perfectThreshold = computed(() => {
+  const pixelScale = calculatedPixelScale.value;
+  return 0.5 * pixelScale;
+});
+
+// Good threshold: 1.0 pixels (practical tolerance)
+const goodThreshold = computed(() => {
+  const pixelScale = calculatedPixelScale.value;
+  return 1.0 * pixelScale;
+});
+
+const binning = computed(() => props.binning || 1);
+
+// Check if we're viewing in arcsecond scale (pixel well analysis only makes sense in arcseconds)
+const isArcsecondScale = computed(() => {
+  return props.selectedScale === 'Arc-secs/pixel' || props.selectedScale === 'Arc-secs/pixel RMS (50 sec window)';
+});
+
+// Calculate the actual pixel scale for the main imaging camera
+// This uses the telescope focal length from PHD2 and the selected camera pixel size
+const calculatedPixelScale = computed(() => {
+  const specs = currentCameraSpecs.value;
+  const effectiveBinning = binning.value;
+  
+  // Get focal length from PHD2 log (this is the telescope focal length, not guide scope)
+  // For now, we'll use a default of 800mm for the Newtonian 800/203 F4
+  // In the future, this could come from equipment profiles
+  const telescopeFocalLength = 800; // mm - Newtonian 800/203 F4
+  
+  // Calculate pixel scale: (pixel size in μm × 206265) / focal length in mm
+  const effectivePixelSize = specs.pixelSize * effectiveBinning;
+  const pixelScale = (effectivePixelSize * 206265) / telescopeFocalLength;
+  
+  return pixelScale / 1000; // Convert from milliarcsec to arcsec
+});
+
+const updateCameraSpecs = () => {
+  // This method is called when camera selection changes
+  // Could emit event to parent component if needed for further analysis
+};
 
 const formatDuration = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
@@ -138,6 +352,103 @@ const formatDuration = (seconds: number): string => {
   color: var(--text-muted);
   font-size: 14px;
   margin: 0;
+}
+
+/* Camera Selection Styles */
+.camera-selection {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.camera-selection-header {
+  margin-bottom: 16px;
+}
+
+.camera-selection-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0 0 4px 0;
+}
+
+.camera-icon {
+  font-size: 18px;
+}
+
+.camera-selection-subtitle {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 0;
+}
+
+.camera-dropdown {
+  margin-bottom: 16px;
+}
+
+.camera-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-size: 14px;
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.camera-select:hover {
+  border-color: var(--primary-color);
+}
+
+.camera-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.custom-camera-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group input {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
 .statistics-grid {
@@ -230,6 +541,29 @@ const formatDuration = (seconds: number): string => {
   font-style: italic;
 }
 
+.camera-specs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spec-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+}
+
+.spec-label {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.spec-value {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
 /* Card-specific colors */
 .rms-card {
   border-left: 4px solid #10b981;
@@ -247,6 +581,26 @@ const formatDuration = (seconds: number): string => {
   border-left: 4px solid #f59e0b;
 }
 
+.threshold-card {
+  border-left: 4px solid #8b5cf6;
+}
+
+.perfect-card {
+  border-left: 4px solid #dc2626;
+}
+
+.good-card {
+  border-left: 4px solid #16a34a;
+}
+
+.quality-card {
+  border-left: 4px solid #06b6d4;
+}
+
+.camera-info-card {
+  border-left: 4px solid #84cc16;
+}
+
 @media (max-width: 768px) {
   .statistics-grid {
     grid-template-columns: 1fr;
@@ -254,6 +608,14 @@ const formatDuration = (seconds: number): string => {
   
   .statistics-section {
     padding: 16px;
+  }
+  
+  .camera-selection {
+    padding: 16px;
+  }
+  
+  .custom-camera-inputs {
+    grid-template-columns: 1fr;
   }
   
   .stat-breakdown {

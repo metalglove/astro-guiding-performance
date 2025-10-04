@@ -10,7 +10,8 @@
           <nav class="app-nav">
             <router-link to="/" class="nav-link">Home</router-link>
             <router-link to="/phd" class="nav-link">PHD Analysis</router-link>
-            <router-link to="/about" class="nav-link">About</router-link>
+            <router-link to="/equipment" class="nav-link">Equipment</router-link>
+            <router-link to="/methodology" class="nav-link">Methodology</router-link>
           </nav>
         </div>
       </div>
@@ -26,6 +27,7 @@
 <style>
 :root {
   --primary-color: #667eea;
+  --primary-hover: #5a67d8;
   --primary-dark: #5a67d8;
   --secondary-color: #764ba2;
   --accent-color: #f093fb;
@@ -50,6 +52,16 @@
   --border-radius: 0.5rem;
   --border-radius-lg: 0.75rem;
   --transition: all 0.2s ease-in-out;
+  
+  /* Additional variables for equipment components */
+  --bg-color: #f9fafb;
+  --text-color: #1f2937;
+  --text-muted: #6b7280;
+  --card-bg: #ffffff;
+  --border-color: #e5e7eb;
+  --hover-bg: #f3f4f6;
+  --input-bg: #ffffff;
+  --disabled-bg: #f9fafb;
 }
 
 * {

@@ -4,6 +4,7 @@ import './registerServiceWorker';
 import router from './router';
 import { rootStore, rootStoreKey } from './store';
 import { Chart, registerables } from 'chart.js';
+import 'chartjs-adapter-moment';
 import zoomPlugin from 'chartjs-plugin-zoom';
 
 Chart.register(...registerables, zoomPlugin);

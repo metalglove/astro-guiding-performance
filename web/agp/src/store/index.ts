@@ -17,10 +17,14 @@ import { ASIAIRActions, ASIAIRActionTypes } from './modules/ASIAIR/ASIAIR.action
 import { ASIAIRGetters, ASIAIRGetterTypes } from './modules/ASIAIR/ASIAIR.getters';
 import { ASIAIRMutations, ASIAIRMutationTypes } from './modules/ASIAIR/ASIAIR.mutations';
 
+import equipmentModule from './modules/Equipment';
+import { EquipmentState } from './modules/Equipment/Equipment.types';
+
 export interface RootState {
   app: IAppState;
   phd: IPHDState;
   asiair: IASIAIRState;
+  equipment: EquipmentState;
 }
 
 export type RootStore =
@@ -33,6 +37,7 @@ export const rootStore = createStore({
     app: appStore,
     phd: phdStore,
     asiair: asiairStore,
+    equipment: equipmentModule,
   }
 });
 

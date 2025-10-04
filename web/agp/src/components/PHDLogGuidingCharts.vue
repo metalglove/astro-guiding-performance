@@ -28,6 +28,10 @@
       :maxError="maxError"
       :sessionDuration="sessionDuration"
       :dataPointsCount="dataPointsCount"
+      :pixelScale="sessionPixelScale"
+      :selectedScale="selectedScale"
+      :perfectDataPercentage="perfectDataPercentage"
+      :goodDataPercentage="goodDataPercentage"
     />
 
     <!-- Charts Section -->
@@ -37,8 +41,6 @@
         title="Guiding Performance Over Time"
         :chartData="chartData"
         :chartOptions="chartDataOptions"
-        @reset-zoom="resetZoom"
-        @download-chart="() => downloadChart('timeseries')"
       />
 
       <!-- Scatter Plot -->
@@ -46,8 +48,6 @@
         title="RA vs Dec Error Distribution"
         :chartData="scatterChartData"
         :chartOptions="scatterChartDataOptions"
-        @reset-zoom="resetZoom"
-        @download-chart="() => downloadChart('scatter')"
       />
 
       <!-- Special Chart (if available) -->
@@ -56,8 +56,6 @@
         title="Cumulative Distribution Function"
         :chartData="specialChartData"
         :chartOptions="specialChartDataOptions"
-        @reset-zoom="resetZoom"
-        @download-chart="() => downloadChart('cdf')"
       />
     </div>
   </div>
@@ -89,10 +87,6 @@ const props = defineProps<Props>();
 const selectedGuidingSession = toRef(props, 'selectedGuidingSession');
 
 // Refs
-const lineChartRef = ref();
-const scatterChartRef = ref();
-const specialLineChartRef = ref();
-
 // Reactive data
 const selectedScale = ref('Arc-secs/pixel');
 const selectedAxes = ref({ title: 'Both Axes', code: 0 });
@@ -112,6 +106,10 @@ const selectAxesOptions = [
 ];
 
 // Computed properties for data processing
+const sessionPixelScale = computed(() => {
+  return selectedGuidingSession.value?.pixelScale || null;
+});
+
 const scaledData = computed(() => {
   // Safety check - ensure selectedGuidingSession and guidingFrames exist
   if (!selectedGuidingSession.value || !selectedGuidingSession.value.guidingFrames) {
@@ -322,23 +320,72 @@ const specialChartData = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return { datasets: [] };
   
-  const errors = data.map((d: ProcessedDataPoint) => d.totalXY).sort((a: number, b: number) => a - b);
-  const cdfData = errors.map((error: number, index: number) => ({
+  // Filter errors to focus on 0-2 range for better visualization
+  const allErrors = data.map((d: ProcessedDataPoint) => d.totalXY).sort((a: number, b: number) => a - b);
+  const maxRelevantError = Math.min(2.0, Math.max(...allErrors));
+  const relevantErrors = allErrors.filter((error: number) => error <= maxRelevantError);
+  
+  const cdfData = relevantErrors.map((error: number, index: number) => ({
     x: error,
-    y: (index + 1) / errors.length * 100
+    y: (allErrors.findIndex((e: number) => e > error) === -1 ? allErrors.length : allErrors.findIndex((e: number) => e > error)) / allErrors.length * 100
   }));
   
-  return {
-    datasets: [{
-      label: 'Cumulative Distribution',
-      data: cdfData,
-      borderColor: '#10b981',
-      backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  // Calculate thresholds for ASI 2600 MM Pro setup
+  const pixelScale = (3.76 * 206265) / 800 / 1000; // arcsec/pixel
+  const perfectThreshold = 0.5 * pixelScale; // ~0.485 arcseconds
+  const goodThreshold = 1.0 * pixelScale; // ~0.970 arcseconds
+  
+  // Find percentages at thresholds
+  const perfectPercentage = allErrors.filter((e: number) => e <= perfectThreshold).length / allErrors.length * 100;
+  const goodPercentage = allErrors.filter((e: number) => e <= goodThreshold).length / allErrors.length * 100;
+  
+  const datasets: any[] = [{
+    label: 'Cumulative Distribution',
+    data: cdfData,
+    borderColor: '#10b981',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 2,
+    pointRadius: 0,
+    tension: 0,
+    fill: true
+  }];
+  
+  // Add threshold lines only if they're within the visible range
+  if (perfectThreshold <= maxRelevantError) {
+    datasets.push({
+      label: `Perfect Threshold (${perfectThreshold.toFixed(3)}")`,
+      data: [
+        { x: perfectThreshold, y: 0 },
+        { x: perfectThreshold, y: perfectPercentage }
+      ],
+      borderColor: '#dc2626',
+      backgroundColor: '#dc2626',
       borderWidth: 2,
+      borderDash: [5, 5],
       pointRadius: 0,
-      tension: 0
-    }]
-  };
+      tension: 0,
+      fill: false
+    });
+  }
+  
+  if (goodThreshold <= maxRelevantError) {
+    datasets.push({
+      label: `Good Threshold (${goodThreshold.toFixed(3)}")`,
+      data: [
+        { x: goodThreshold, y: 0 },
+        { x: goodThreshold, y: goodPercentage }
+      ],
+      borderColor: '#16a34a',
+      backgroundColor: '#16a34a',
+      borderWidth: 2,
+      borderDash: [5, 5],
+      pointRadius: 0,
+      tension: 0,
+      fill: false
+    });
+  }
+  
+  return { datasets };
 });
 
 const specialChartDataOptions = computed(() => ({
@@ -350,6 +397,11 @@ const specialChartDataOptions = computed(() => ({
       title: {
         display: true,
         text: `Total Error (${selectedScale.value})`
+      },
+      min: 0,
+      max: 2.0, // Focus on 0-2 error range for better visibility
+      grid: {
+        color: 'rgba(255, 255, 255, 0.1)'
       }
     },
     y: {
@@ -358,12 +410,30 @@ const specialChartDataOptions = computed(() => ({
         text: 'Cumulative Percentage (%)'
       },
       min: 0,
-      max: 100
+      max: 100,
+      grid: {
+        color: 'rgba(255, 255, 255, 0.1)'
+      }
     }
   },
   plugins: {
     legend: {
-      display: false
+      display: true,
+      position: 'top',
+      labels: {
+        color: 'var(--text-color)',
+        usePointStyle: true,
+        padding: 20
+      }
+    },
+    tooltip: {
+      mode: 'index',
+      intersect: false,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      titleColor: 'white',
+      bodyColor: 'white',
+      borderColor: 'rgba(255, 255, 255, 0.2)',
+      borderWidth: 1
     }
   }
 }));
@@ -399,6 +469,39 @@ const maxError = computed(() => {
 
 const dataPointsCount = computed(() => scaledData.value?.length || 0);
 
+// Perfect data: within 0.5 pixels (very tight tolerance)
+const perfectDataPercentage = computed(() => {
+  const data = scaledData.value;
+  if (!data || data.length === 0) return 0;
+  
+  const pixelScale = (3.76 * 206265) / 800 / 1000; // arcsec/pixel
+  const perfectThreshold = 0.5 * pixelScale; // 0.5 pixels = ~0.485 arcseconds
+  
+  const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) => 
+    point.totalXY <= perfectThreshold
+  ).length;
+  
+  return (pointsWithinThreshold / data.length) * 100;
+});
+
+// Good data: within 1.0 pixels (practical tolerance)
+const goodDataPercentage = computed(() => {
+  const data = scaledData.value;
+  if (!data || data.length === 0) return 0;
+  
+  const pixelScale = (3.76 * 206265) / 800 / 1000; // arcsec/pixel
+  const goodThreshold = 1.0 * pixelScale; // 1.0 pixels = ~0.970 arcseconds
+  
+  const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) => 
+    point.totalXY <= goodThreshold
+  ).length;
+  
+  return (pointsWithinThreshold / data.length) * 100;
+});
+
+// Keep the original for backward compatibility
+const usableDataPercentage = computed(() => goodDataPercentage.value);
+
 const sessionDuration = computed(() => {
   const data = scaledData.value;
   if (!data || data.length < 2) return 0;
@@ -410,7 +513,9 @@ const sessionDuration = computed(() => {
 });
 
 const canShowMagic = computed(() => {
-  return scaledData.value && scaledData.value.length > 10;
+  // CDF only makes sense when viewing in arc-seconds, not pixels
+  const isArcsecondScale = selectedScale.value === 'Arc-secs/pixel' || selectedScale.value === 'Arc-secs/pixel RMS (50 sec window)';
+  return scaledData.value && scaledData.value.length > 10 && isArcsecondScale;
 });
 
 // Methods
@@ -420,44 +525,6 @@ const scaleChanged = (newScale: string) => {
 
 const handleAxesChanged = (axes: any) => {
   selectedAxes.value = axes;
-};
-
-const resetZoom = () => {
-  // Reset zoom functionality
-  [lineChartRef, scatterChartRef, specialLineChartRef].forEach(ref => {
-    if (ref.value?.chart) {
-      ref.value.chart.resetZoom();
-    }
-  });
-};
-
-const downloadChart = (type: string) => {
-  let chartRef;
-  let filename;
-  
-  switch (type) {
-    case 'timeseries':
-      chartRef = lineChartRef;
-      filename = 'guiding-timeseries.png';
-      break;
-    case 'scatter':
-      chartRef = scatterChartRef;
-      filename = 'guiding-scatter.png';
-      break;
-    case 'cdf':
-      chartRef = specialLineChartRef;
-      filename = 'guiding-cdf.png';
-      break;
-    default:
-      return;
-  }
-  
-  if (chartRef.value?.chart) {
-    const link = document.createElement('a');
-    link.download = filename;
-    link.href = chartRef.value.chart.toBase64Image();
-    link.click();
-  }
 };
 
 onMounted(() => {

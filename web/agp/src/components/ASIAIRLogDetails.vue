@@ -52,6 +52,18 @@
           </div>
         </div>
       </div>
+      
+      <!-- Show message if no autoruns -->
+      <div v-if="asiairLog && asiairLog.autoruns && asiairLog.autoruns.length === 0" class="no-targets-message">
+        <div class="no-targets-icon">📝</div>
+        <h4>No Imaging Sessions Found</h4>
+        <p>No autorun sessions were detected in the uploaded ASIAIR log file. This could happen if:</p>
+        <ul>
+          <li>The log file doesn't contain any completed imaging sessions</li>
+          <li>The sessions were manually stopped before completion</li>
+          <li>The log format is different than expected</li>
+        </ul>
+      </div>
     </div>
   </div>
 </template>
@@ -97,22 +109,22 @@ export default defineComponent({
       
       if (lights.length > 0) {
         groupBy(lights, (light: ExposureEvent) => light.integrationTime).forEach((grouped) => {
-          parts.push(`💡 Light: ${grouped.length}× ${grouped[0]?.integrationTime}s`);
+          parts.push(`💡 Light: ${grouped.length}× ${grouped[0]?.integrationTime}`);
         });
       }
       if (biases.length > 0) {
         groupBy(biases, (bias: ExposureEvent) => bias.integrationTime).forEach((grouped) => {
-          parts.push(`🔲 Bias: ${grouped.length}× ${grouped[0]?.integrationTime}s`);
+          parts.push(`🔲 Bias: ${grouped.length}× ${grouped[0]?.integrationTime}`);
         });
       }
       if (darks.length > 0) {
         groupBy(darks, (dark: ExposureEvent) => dark.integrationTime).forEach((grouped) => {
-          parts.push(`⚫ Dark: ${grouped.length}× ${grouped[0]?.integrationTime}s`);
+          parts.push(`⚫ Dark: ${grouped.length}× ${grouped[0]?.integrationTime}`);
         });
       }
       if (flats.length > 0) {
         groupBy(flats, (flat: ExposureEvent) => flat.integrationTime).forEach((grouped) => {
-          parts.push(`◻️ Flat: ${grouped.length}× ${grouped[0]?.integrationTime}s`);
+          parts.push(`◻️ Flat: ${grouped.length}× ${grouped[0]?.integrationTime}`);
         });
       }
       
@@ -289,6 +301,38 @@ export default defineComponent({
   border-radius: var(--border-radius);
   white-space: pre-line;
   border: 1px solid var(--gray-200);
+}
+
+.no-targets-message {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--gray-600);
+}
+
+.no-targets-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.no-targets-message h4 {
+  margin: 0 0 1rem 0;
+  color: var(--gray-800);
+  font-size: 1.25rem;
+}
+
+.no-targets-message p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.no-targets-message ul {
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.no-targets-message li {
+  margin-bottom: 0.5rem;
 }
 
 @media (max-width: 768px) {

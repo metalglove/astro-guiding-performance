@@ -42,19 +42,37 @@ const emit = defineEmits(['reset-zoom', 'download-chart']);
 const chartRef = ref();
 
 const resetZoom = () => {
+  console.log('Reset zoom clicked (scatter)');
+  
   emit('reset-zoom');
-  if (chartRef.value?.chart) {
-    chartRef.value.chart.resetZoom();
+  
+  if (chartRef.value?.chartInstance) {
+    console.log('Calling resetZoom on scatter chart');
+    chartRef.value.chartInstance.resetZoom();
+    console.log('Reset zoom successful');
+  } else {
+    console.log('Scatter chart instance not available for reset');
   }
 };
 
 const downloadChart = () => {
+  console.log('Download chart clicked (scatter)');
+  
   emit('download-chart');
-  if (chartRef.value?.chart) {
-    const link = document.createElement('a');
-    link.download = `${props.title.toLowerCase().replace(/\s+/g, '-')}-chart.png`;
-    link.href = chartRef.value.chart.toBase64Image();
-    link.click();
+  
+  if (chartRef.value?.chartInstance) {
+    console.log('Calling toBase64Image on scatter chart');
+    try {
+      const link = document.createElement('a');
+      link.download = `${props.title.toLowerCase().replace(/\s+/g, '-')}-chart.png`;
+      link.href = chartRef.value.chartInstance.toBase64Image();
+      link.click();
+      console.log('Scatter download successful');
+    } catch (error) {
+      console.error('Scatter download failed:', error);
+    }
+  } else {
+    console.log('Scatter chart instance not available for download');
   }
 };
 </script>

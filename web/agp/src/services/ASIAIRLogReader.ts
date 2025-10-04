@@ -7,7 +7,9 @@ export default class ASIAIRLogReader {
     }
 
     const logDateTime: Date = new Date(text.slice(15, 35));
-    const lines: string[] = text.split('\r\n');
+    // Handle different line ending types
+    const lines: string[] = text.split(/\r\n|\r|\n/);
+    
     let index = -1;
     let currentLine = '';
     let currentDateTime = '';
