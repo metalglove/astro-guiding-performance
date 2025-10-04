@@ -9,10 +9,6 @@
     </div>
     
     <div v-show="!isCollapsed" class="progress-content">
-      <div class="progress-bar">
-        <div class="progress-fill" :style="{ height: `${overallProgress}%` }"></div>
-      </div>
-      
       <div class="progress-steps">
         <div
           v-for="step in analysisSteps"
@@ -361,25 +357,6 @@ onUnmounted(() => {
   padding: 1rem;
 }
 
-.progress-bar {
-  width: 4px;
-  height: 280px;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 2px;
-  position: relative;
-  margin: 0 auto 1.5rem;
-}
-
-.progress-fill {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  background: linear-gradient(to top, #667eea, #764ba2);
-  border-radius: 2px;
-  transition: height 0.5s ease;
-}
-
 .progress-steps {
   display: flex;
   flex-direction: column;
@@ -556,10 +533,6 @@ onUnmounted(() => {
     right: 1rem;
     min-width: 50px;
     max-width: 50px;
-  }
-  
-  .progress-bar {
-    height: 140px;
   }
   
   .progress-steps {
