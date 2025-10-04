@@ -26,4 +26,6 @@ add equipmentstore to the root store
 
 update readme images
 
+fix topbar with responsive design, hamburger menu?
+
 update packages
