@@ -64,6 +64,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, toRef } from 'vue';
 import { GuidingSession, GuidingFrame } from '../store/modules/PHD/PHD.types';
+import { useEquipmentStore } from '../store';
+import { EquipmentGetterTypes } from '../store/modules/Equipment/Equipment.getters';
 import ChartControls from './Charts/ChartControls.vue';
 import ChartStatistics from './Charts/ChartStatistics.vue';
 import LineChartComponent from './Charts/LineChartComponent.vue';
@@ -85,6 +87,14 @@ interface Props {
 const props = defineProps<Props>();
 
 const selectedGuidingSession = toRef(props, 'selectedGuidingSession');
+
+// Equipment store for pixel scale and equipment calculations
+const equipmentStore = useEquipmentStore();
+
+// Get pixel scale from active equipment profile
+const activePixelScale = computed(() => {
+  return equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PIXEL_SCALE) ?? 0.970; // Default fallback for ASI 2600 MM Pro + 800mm
+});
 
 // Refs
 // Reactive data
@@ -330,10 +340,10 @@ const specialChartData = computed(() => {
     y: (allErrors.findIndex((e: number) => e > error) === -1 ? allErrors.length : allErrors.findIndex((e: number) => e > error)) / allErrors.length * 100
   }));
   
-  // Calculate thresholds for ASI 2600 MM Pro setup
-  const pixelScale = (3.76 * 206265) / 800 / 1000; // arcsec/pixel
-  const perfectThreshold = 0.5 * pixelScale; // ~0.485 arcseconds
-  const goodThreshold = 1.0 * pixelScale; // ~0.970 arcseconds
+  // Calculate thresholds using active equipment profile
+  const pixelScale = activePixelScale.value; // arcsec/pixel from Equipment store
+  const perfectThreshold = 0.5 * pixelScale; // 0.5 pixels tolerance
+  const goodThreshold = 1.0 * pixelScale; // 1.0 pixels tolerance
   
   // Find percentages at thresholds
   const perfectPercentage = allErrors.filter((e: number) => e <= perfectThreshold).length / allErrors.length * 100;
@@ -474,8 +484,8 @@ const perfectDataPercentage = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return 0;
   
-  const pixelScale = (3.76 * 206265) / 800 / 1000; // arcsec/pixel
-  const perfectThreshold = 0.5 * pixelScale; // 0.5 pixels = ~0.485 arcseconds
+  const pixelScale = activePixelScale.value; // arcsec/pixel from Equipment store
+  const perfectThreshold = 0.5 * pixelScale; // 0.5 pixels tolerance
   
   const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) => 
     point.totalXY <= perfectThreshold
@@ -489,8 +499,8 @@ const goodDataPercentage = computed(() => {
   const data = scaledData.value;
   if (!data || data.length === 0) return 0;
   
-  const pixelScale = (3.76 * 206265) / 800 / 1000; // arcsec/pixel
-  const goodThreshold = 1.0 * pixelScale; // 1.0 pixels = ~0.970 arcseconds
+  const pixelScale = activePixelScale.value; // arcsec/pixel from Equipment store
+  const goodThreshold = 1.0 * pixelScale; // 1.0 pixels tolerance
   
   const pointsWithinThreshold = data.filter((point: ProcessedDataPoint) => 
     point.totalXY <= goodThreshold

@@ -24,7 +24,10 @@
       
       <div class="camera-dropdown">
         <select v-model="selectedCamera" @change="updateCameraSpecs" class="camera-select">
-          <option value="asi2600mm">ASI 2600 MM Pro</option>
+          <option value="active-profile">Active Profile Camera</option>
+          <option v-for="camera in presetCameras.filter(c => c.type === 'imaging')" :key="camera.id" :value="camera.id">
+            {{ camera.name }}
+          </option>
           <option value="guide-camera">Use Guide Camera ({{ guideCameraInfo }})</option>
           <option value="custom">Custom Camera</option>
         </select>
@@ -175,6 +178,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useEquipmentStore } from '../../store';
+import { EquipmentGetterTypes } from '../../store/modules/Equipment/Equipment.getters';
 
 interface Props {
   rmsStats: {
@@ -198,39 +203,18 @@ interface Props {
 
 const props = defineProps<Props>();
 
+// Equipment store
+const equipmentStore = useEquipmentStore();
+
 // Camera selection state
-const selectedCamera = ref('asi2600mm');
+const selectedCamera = ref('active-profile');
 const customPixelSize = ref(3.8);
 const customWidth = ref(6248);
 const customHeight = ref(4176);
 
-// Using static camera database for now to avoid store injection issues
-// Equipment store integration will be added in a future update
-
-// Camera database - simplified without store integration for now
-const cameraDatabase = {
-  'asi2600mm': {
-    name: 'ASI 2600 MM Pro',
-    pixelSize: 3.76,
-    width: 6248,
-    height: 4176,
-    description: 'ZWO ASI 2600 MM Pro Monochrome'
-  },
-  'asi2600mm-pro': {
-    name: 'ASI 2600 MM Pro',
-    pixelSize: 3.76,
-    width: 6248,
-    height: 4176,
-    description: 'ZWO ASI 2600 MM Pro Monochrome'
-  },
-  'asi224mc': {
-    name: 'ASI 224 MC',
-    pixelSize: 3.75,
-    width: 1304,
-    height: 976,
-    description: 'ZWO ASI 224 MC Guide Camera'
-  }
-};
+// Get camera presets from Equipment store
+const presetCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_CAMERAS) as any[]);
+const activeProfile = computed(() => equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PROFILE) as any);
 
 // Computed properties
 const guideCameraInfo = computed(() => {
@@ -242,8 +226,9 @@ const guideCameraInfo = computed(() => {
 
 const currentCameraSpecs = computed(() => {
   switch (selectedCamera.value) {
-    case 'asi2600mm':
-      return cameraDatabase['asi2600mm'];
+    case 'active-profile':
+      // Use active profile's imaging camera
+      return activeProfile.value?.imagingCamera || defaultCameraSpecs;
     case 'guide-camera':
       return {
         name: 'Guide Camera',
@@ -259,9 +244,19 @@ const currentCameraSpecs = computed(() => {
         height: customHeight.value
       };
     default:
-      return cameraDatabase['asi2600mm'];
+      // Find preset camera by ID or return default
+      const presetCamera = presetCameras.value.find(c => c.id === selectedCamera.value);
+      return presetCamera || defaultCameraSpecs;
   }
 });
+
+// Default camera specs fallback
+const defaultCameraSpecs = {
+  name: 'ASI 2600 MM Pro',
+  pixelSize: 3.76,
+  width: 6248,
+  height: 4176
+};
 
 // Perfect threshold: 0.5 pixels (very tight tolerance)
 const perfectThreshold = computed(() => {
@@ -288,10 +283,9 @@ const calculatedPixelScale = computed(() => {
   const specs = currentCameraSpecs.value;
   const effectiveBinning = binning.value;
   
-  // Get focal length from PHD2 log (this is the telescope focal length, not guide scope)
-  // For now, we'll use a default of 800mm for the Newtonian 800/203 F4
-  // In the future, this could come from equipment profiles
-  const telescopeFocalLength = 800; // mm - Newtonian 800/203 F4
+  // Get focal length from active equipment profile
+  const activeProfile = equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PROFILE) as any;
+  const telescopeFocalLength = activeProfile?.telescope?.focalLength ?? 800; // mm - fallback to 800mm
   
   // Calculate pixel scale: (pixel size in μm × 206265) / focal length in mm
   const effectivePixelSize = specs.pixelSize * effectiveBinning;
