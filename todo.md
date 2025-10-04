@@ -1,4 +1,11 @@
-make recommendation of frame to delete using timestamps
+✅ make recommendation of frame to delete using timestamps
+   - Created new FrameRecommendations component to analyze problematic frames
+   - Identifies three types of problematic frames: large guiding errors, sudden position jumps, and low SNR frames
+   - Dynamic thresholds based on pixel scale: 3 pixels for large errors, 2 pixels for jumps, SNR < 10
+   - Shows detailed frame information with timestamps for easy identification in processing software
+   - Export functionality to clipboard or text file for reference
+   - Calculates potential improvement metrics and summary statistics
+   - Integrated into PHD Log Guiding Charts for seamless workflow
 
 ✅ fix topbar with responsive design, hamburger menu?
    - Implemented hamburger menu for mobile devices (≤768px width)
@@ -13,7 +20,12 @@ remove debugging statements
 
 validate whether the equipment functionality works updating and changing profiles etc
 
-for the cdf, note that we filter the data points to only show relevant data points < 2" below the chart
+✅ for the cdf, note that we filter the data points to only show relevant data points < 2" below the chart
+   - Added informational note below the CDF chart explaining data filtering methodology
+   - Note explains that the chart focuses on errors < 2" for better visualization
+   - Clarifies that larger outliers are included in statistics but not displayed in the chart
+   - Styled with blue information background and responsive design
+   - Maintains scientific transparency about data presentation choices
 
 move theory based computations to functions in their own files to directly reference in documentation.
 

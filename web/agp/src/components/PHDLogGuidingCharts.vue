@@ -31,6 +31,13 @@
       :goodDataPercentage="goodDataPercentage"
     />
 
+    <!-- Frame Deletion Recommendations -->
+    <FrameRecommendations
+      :guidingSession="selectedGuidingSession"
+      :asiairLog="asiairLog"
+      :binning="selectedGuidingSession.binning || 1"
+    />
+
     <!-- Charts Section -->
     <div class="charts-section">
       <!-- Time Series Chart -->
@@ -48,12 +55,23 @@
       />
 
       <!-- Special Chart (if available) -->
-      <LineChartComponent
-        v-if="canShowMagic"
-        title="Cumulative Distribution Function"
-        :chartData="specialChartData"
-        :chartOptions="specialChartDataOptions"
-      />
+      <div v-if="canShowMagic" class="cdf-chart-section">
+        <LineChartComponent
+          title="Cumulative Distribution Function"
+          :chartData="specialChartData"
+          :chartOptions="specialChartDataOptions"
+        />
+        <div class="chart-note">
+          <div class="note-content">
+            <span class="note-icon">ℹ️</span>
+            <div class="note-text">
+              <strong>Data Filtering:</strong> This CDF chart focuses on errors &lt; 2″ for better visualization of relevant data points. 
+              Larger outliers are included in the statistical calculations but not displayed in this chart to maintain readability 
+              of the critical performance range.
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -61,12 +79,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, toRef } from 'vue';
 import { GuidingSession, GuidingFrame } from '../store/modules/PHD/PHD.types';
-import { useEquipmentStore } from '../store';
+import { useEquipmentStore, useASIAIRStore } from '../store';
 import { EquipmentGetterTypes } from '../store/modules/Equipment/Equipment.getters';
+import { ASIAIRGetterTypes } from '../store/modules/ASIAIR/ASIAIR.getters';
 import ChartControls from './Charts/ChartControls.vue';
 import ChartStatistics from './Charts/ChartStatistics.vue';
 import LineChartComponent from './Charts/LineChartComponent.vue';
 import ScatterChartComponent from './Charts/ScatterChartComponent.vue';
+import FrameRecommendations from './FrameRecommendations.vue';
 
 interface ProcessedDataPoint {
   x: number;
@@ -87,10 +107,16 @@ const selectedGuidingSession = toRef(props, 'selectedGuidingSession');
 
 // Equipment store for pixel scale and equipment calculations
 const equipmentStore = useEquipmentStore();
+const asiairStore = useASIAIRStore();
 
 // Get pixel scale from active equipment profile
 const activePixelScale = computed(() => {
   return equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PIXEL_SCALE) ?? 0.970; // Default fallback for ASI 2600 MM Pro + 800mm
+});
+
+// Get ASIAIR log for actual exposure data
+const asiairLog = computed(() => {
+  return asiairStore.getters(ASIAIRGetterTypes.GET_ASIAIR_LOG);
 });
 
 // Refs
@@ -585,6 +611,43 @@ onMounted(() => {
   gap: 24px;
 }
 
+.cdf-chart-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chart-note {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: -8px;
+}
+
+.note-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.note-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.note-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-color);
+}
+
+.note-text strong {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .guiding-charts {
     padding: 0 12px;
@@ -602,6 +665,19 @@ onMounted(() => {
 
   .charts-subtitle {
     font-size: 14px;
+  }
+
+  .chart-note {
+    padding: 12px;
+  }
+
+  .note-content {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .note-text {
+    font-size: 13px;
   }
 }
 </style>
