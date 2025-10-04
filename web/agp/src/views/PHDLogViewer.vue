@@ -206,12 +206,9 @@ export default defineComponent({
         console.log('Example PHD guiding sessions:', phdLogData.guidingSessions?.length || 0);
         phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, phdLogData);
 
-        // Create equipment profile from example log data
-        console.log('Creating equipment profile from example data...');
-        equipmentStore.dispatch(EquipmentActionTypes.CREATE_PROFILE_FROM_LOGS, {
-          phdLog: phdText,
-          asiairLog: asiairText
-        });
+        // Ensure example equipment profile exists
+        console.log('Ensuring example equipment profile exists...');
+        equipmentStore.dispatch(EquipmentActionTypes.ENSURE_EXAMPLE_PROFILE, undefined);
 
         // Set files as uploaded
         appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);

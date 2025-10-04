@@ -10,6 +10,7 @@ export enum EquipmentActionTypes {
   DELETE_PROFILE = 'DELETE_PROFILE',
   SET_ACTIVE_PROFILE = 'SET_ACTIVE_PROFILE',
   CREATE_PROFILE_FROM_LOGS = 'CREATE_PROFILE_FROM_LOGS',
+  ENSURE_EXAMPLE_PROFILE = 'ENSURE_EXAMPLE_PROFILE',
   EXPORT_PROFILES = 'EXPORT_PROFILES',
   IMPORT_PROFILES = 'IMPORT_PROFILES'
 }
@@ -42,6 +43,9 @@ export interface EquipmentActions {
     context: AugmentedEquipmentActionContext,
     logData: any
   ): EquipmentProfile;
+  [EquipmentActionTypes.ENSURE_EXAMPLE_PROFILE](
+    context: AugmentedEquipmentActionContext
+  ): EquipmentProfile | Promise<EquipmentProfile>;
   [EquipmentActionTypes.EXPORT_PROFILES](
     context: AugmentedEquipmentActionContext
   ): void;
@@ -103,8 +107,47 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
     commit(EquipmentMutationTypes.SET_ACTIVE_PROFILE, id);
   },
 
+  // Ensure example profile exists and set as active
+  [EquipmentActionTypes.ENSURE_EXAMPLE_PROFILE]({ commit, state, dispatch }) {
+    // Check if an example profile already exists
+    const existingExampleProfile = state.profiles.find(profile => 
+      profile.description === 'Demo equipment profile - ASI 2600 MM + Newtonian 800/203 F4'
+    );
+
+    if (existingExampleProfile) {
+      console.log('Using existing demo equipment profile:', existingExampleProfile.name);
+      commit(EquipmentMutationTypes.SET_ACTIVE_PROFILE, existingExampleProfile.id);
+      return existingExampleProfile;
+    }
+
+    // Create example profile with default data
+    const profile: Omit<EquipmentProfile, 'id' | 'createdAt' | 'updatedAt'> = {
+      name: 'Demo: ASI 2600 MM + Newtonian 800/203',
+      description: 'Demo equipment profile - ASI 2600 MM + Newtonian 800/203 F4',
+      telescope: state.presetTelescopes[0], // Newtonian 800/203 F4
+      imagingCamera: state.presetCameras[0], // ASI 2600 MM Pro
+      guidingCamera: state.presetCameras.find(c => c.type === 'guiding'),
+      mount: state.presetMounts[0], // First preset mount
+      accessories: []
+    };
+
+    return dispatch(EquipmentActionTypes.CREATE_PROFILE, profile);
+  },
+
   // Create profile from log data
   [EquipmentActionTypes.CREATE_PROFILE_FROM_LOGS]({ commit, state, dispatch }, logData: any) {
+    // Check if an example profile already exists
+    const existingExampleProfile = state.profiles.find(profile => 
+      profile.description === 'Demo equipment profile - ASI 2600 MM + Newtonian 800/203 F4'
+    );
+
+    if (existingExampleProfile) {
+      // Use existing example profile
+      console.log('Using existing demo equipment profile:', existingExampleProfile.name);
+      commit(EquipmentMutationTypes.SET_ACTIVE_PROFILE, existingExampleProfile.id);
+      return existingExampleProfile;
+    }
+
     // Parse PHD2 log for guide camera info
     let guidingCamera: CameraSpecs | undefined;
     if (logData.phdLog) {
@@ -125,10 +168,10 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
       }
     }
 
-    // Create a default profile with available data
+    // Create a new example profile with consistent naming
     const profile: Omit<EquipmentProfile, 'id' | 'createdAt' | 'updatedAt'> = {
-      name: `Session ${new Date().toLocaleDateString()}`,
-      description: 'Auto-generated from log files',
+      name: 'Demo: ASI 2600 MM + Newtonian 800/203',
+      description: 'Demo equipment profile - ASI 2600 MM + Newtonian 800/203 F4',
       telescope: state.presetTelescopes[0], // Default to first preset
       imagingCamera: state.presetCameras[0], // Default to ASI 2600 MM Pro
       guidingCamera,
@@ -159,6 +202,7 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
     commit(EquipmentMutationTypes.ADD_PROFILE, newProfile);
     commit(EquipmentMutationTypes.SET_ACTIVE_PROFILE, newProfile.id);
 
+    console.log('Created new demo equipment profile:', newProfile.name);
     return newProfile;
   },
 
