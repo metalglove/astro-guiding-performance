@@ -366,6 +366,12 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useEquipmentStore } from '../../store';
 import { EquipmentProfile, TelescopeSpecs, CameraSpecs, MountSpecs, AccessorySpecs } from '../../store/modules/Equipment/Equipment.types';
 import { EquipmentGetterTypes } from '../../store/modules/Equipment/Equipment.getters';
+import { 
+  calculatePixelScale, 
+  calculateTheoreticalResolution, 
+  calculateSamplingRatio,
+  calculateFieldOfView
+} from '../../utilities/computations';
 
 interface Props {
   profile?: EquipmentProfile | null;
@@ -442,18 +448,17 @@ const calculatedValues = computed(() => {
     return {};
   }
 
-  const pixelScale = (camera.pixelSize * 206.265) / telescope.focalLength;
+  const pixelScale = calculatePixelScale(camera.pixelSize, telescope.focalLength);
   const fieldOfView = {
-    width: Number(((camera.width * pixelScale) / 60).toFixed(1)),
-    height: Number(((camera.height * pixelScale) / 60).toFixed(1))
+    width: Number(calculateFieldOfView(camera.width, pixelScale).toFixed(1)),
+    height: Number(calculateFieldOfView(camera.height, pixelScale).toFixed(1))
   };
 
   // Theoretical resolution (Dawes limit)
-  const apertureInches = telescope.aperture / 25.4;
-  const resolution = Number((4.56 / apertureInches).toFixed(2));
+  const resolution = Number(calculateTheoreticalResolution(telescope.aperture).toFixed(2));
 
   // Sampling ratio
-  const samplingRatio = Number((pixelScale / (resolution / 2)).toFixed(1));
+  const samplingRatio = Number(calculateSamplingRatio(pixelScale, resolution).toFixed(1));
 
   return {
     pixelScale: Number(pixelScale.toFixed(2)),

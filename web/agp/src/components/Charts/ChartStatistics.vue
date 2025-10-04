@@ -191,6 +191,7 @@
 import { ref, computed } from 'vue';
 import { useEquipmentStore } from '../../store';
 import { EquipmentGetterTypes } from '../../store/modules/Equipment/Equipment.getters';
+import { calculatePixelScale, QUALITY_THRESHOLDS } from '../../utilities/computations';
 
 interface Props {
   rmsStats: {
@@ -278,13 +279,13 @@ const defaultCameraSpecs = {
 // Perfect threshold: 0.5 pixels (very tight tolerance)
 const perfectThreshold = computed(() => {
   const pixelScale = calculatedPixelScale.value;
-  return 0.5 * pixelScale;
+  return QUALITY_THRESHOLDS.PERFECT * pixelScale;
 });
 
 // Good threshold: 1.0 pixels (practical tolerance)
 const goodThreshold = computed(() => {
   const pixelScale = calculatedPixelScale.value;
-  return 1.0 * pixelScale;
+  return QUALITY_THRESHOLDS.GOOD * pixelScale;
 });
 
 const binning = computed(() => props.binning || 1);
@@ -304,11 +305,8 @@ const calculatedPixelScale = computed(() => {
   const activeProfile = equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PROFILE) as any;
   const telescopeFocalLength = activeProfile?.telescope?.focalLength ?? 800; // mm - fallback to 800mm
   
-  // Calculate pixel scale: (pixel size in μm × 206265) / focal length in mm
-  const effectivePixelSize = specs.pixelSize * effectiveBinning;
-  const pixelScale = (effectivePixelSize * 206265) / telescopeFocalLength;
-  
-  return pixelScale / 1000; // Convert from milliarcsec to arcsec
+  // Calculate pixel scale using standard astronomical formula
+  return calculatePixelScale(specs.pixelSize, telescopeFocalLength, effectiveBinning);
 });
 
 const updateCameraSpecs = () => {

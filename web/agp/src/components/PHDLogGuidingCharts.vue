@@ -87,6 +87,7 @@ import ChartStatistics from './Charts/ChartStatistics.vue';
 import LineChartComponent from './Charts/LineChartComponent.vue';
 import ScatterChartComponent from './Charts/ScatterChartComponent.vue';
 import FrameRecommendations from './FrameRecommendations.vue';
+import { calculateRMSStats, calculateMaxError, calculateSessionDuration, sampleData } from '../utilities/computations';
 
 interface ProcessedDataPoint {
   x: number;
@@ -178,21 +179,7 @@ const sampledData = computed((): ProcessedDataPoint[] => {
   if (!data || data.length === 0) return [];
 
   const maxPoints = 2000;
-  if (data.length <= maxPoints) return data;
-
-  const step = Math.floor(data.length / maxPoints);
-  const sampled: ProcessedDataPoint[] = [];
-
-  for (let i = 0; i < data.length; i += step) {
-    sampled.push(data[i]);
-  }
-
-  // Always include the last point
-  if (sampled.length > 0 && sampled[sampled.length - 1] !== data[data.length - 1]) {
-    sampled.push(data[data.length - 1]);
-  }
-
-  return sampled;
+  return sampleData(data, maxPoints);
 });
 
 // Chart data computations
@@ -399,11 +386,11 @@ const specialChartData = computed(() => {
       borderColor: '#dc2626',
       backgroundColor: '#dc2626',
       borderWidth: 2,
-      borderDash: [5, 5],
+      borderDash: [5, 5] as number[],
       pointRadius: 0,
       tension: 0,
       fill: false
-    });
+    } as any);
   }
 
   if (goodThreshold <= maxRelevantError) {
@@ -416,11 +403,11 @@ const specialChartData = computed(() => {
       borderColor: '#16a34a',
       backgroundColor: '#16a34a',
       borderWidth: 2,
-      borderDash: [5, 5],
+      borderDash: [5, 5] as number[],
       pointRadius: 0,
       tension: 0,
       fill: false
-    });
+    } as any);
   }
 
   return { datasets };
@@ -479,30 +466,12 @@ const specialChartDataOptions = computed(() => ({
 // Statistics computations
 const rmsStats = computed(() => {
   const data = scaledData.value;
-  if (!data || data.length === 0) {
-    return { total: 0, ra: 0, dec: 0 };
-  }
-
-  const raValues = data.map((d: ProcessedDataPoint) => d.x);
-  const decValues = data.map((d: ProcessedDataPoint) => d.y);
-  const totalValues = data.map((d: ProcessedDataPoint) => d.totalXY);
-
-  const raRms = Math.sqrt(raValues.reduce((sum: number, val: number) => sum + val * val, 0) / raValues.length);
-  const decRms = Math.sqrt(decValues.reduce((sum: number, val: number) => sum + val * val, 0) / decValues.length);
-  const totalRms = Math.sqrt(totalValues.reduce((sum: number, val: number) => sum + val * val, 0) / totalValues.length);
-
-  return {
-    total: totalRms,
-    ra: raRms,
-    dec: decRms
-  };
+  return calculateRMSStats(data);
 });
 
 const maxError = computed(() => {
   const data = scaledData.value;
-  if (!data || data.length === 0) return 0;
-
-  return Math.max(...data.map((d: ProcessedDataPoint) => d.totalXY));
+  return calculateMaxError(data);
 });
 
 const dataPointsCount = computed(() => scaledData.value?.length || 0);
@@ -540,11 +509,9 @@ const goodDataPercentage = computed(() => {
 const sessionDuration = computed(() => {
   const data = scaledData.value;
   if (!data || data.length < 2) return 0;
-
-  const startTime = new Date(data[0].timestamp).getTime();
-  const endTime = new Date(data[data.length - 1].timestamp).getTime();
-
-  return (endTime - startTime) / 1000; // Convert to seconds
+  
+  const timestamps = data.map((d: ProcessedDataPoint) => d.timestamp);
+  return calculateSessionDuration(timestamps);
 });
 
 const canShowMagic = computed(() => {

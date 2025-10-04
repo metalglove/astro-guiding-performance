@@ -28,7 +28,12 @@
    - Cleaned up Equipment actions, file uploaders, chart components, and log readers
    - Maintained proper error logging for clipboard, download, and data loading failures
 
-validate whether the equipment functionality works updating and changing profiles etc
+✅ validate whether the equipment functionality works updating and changing profiles etc
+   - Equipment profiles can be created, updated, and switched between successfully
+   - Profile management includes preset telescopes, cameras, and mounts
+   - Equipment store properly manages active profile state and persistence
+   - All calculations dynamically use active profile specifications
+   - Profile creation from log data works correctly
 
 ✅ for the cdf, note that we filter the data points to only show relevant data points < 2" below the chart
    - Added informational note below the CDF chart explaining data filtering methodology
@@ -37,9 +42,20 @@ validate whether the equipment functionality works updating and changing profile
    - Styled with blue information background and responsive design
    - Maintains scientific transparency about data presentation choices
 
-move theory based computations to functions in their own files to directly reference in documentation.
+✅ move theory based computations to functions in their own files to directly reference in documentation.
+   - Created comprehensive computation modules in utilities/computations/
+   - Astronomical computations: pixel scale, theoretical resolution, sampling ratio, field of view
+   - Statistical computations: RMS calculations, percentile analysis, session duration, data sampling
+   - Quality analysis: threshold calculations, frame quality assessment, improvement potential
+   - Physics constants: arc-second conversion, Dawes coefficient, quality thresholds, Nyquist factor
+   - Updated all components to use centralized computation functions instead of inline calculations
+   - Functions now properly documented with references to astronomical standards and formulas
 
-constants (such as physiscs stuff) should be moved to a global file 
+✅ constants (such as physiscs stuff) should be moved to a global file
+   - Created utilities/constants/physics.ts with all physical and mathematical constants
+   - Arc-second conversion factor (206,265), Dawes coefficient (4.56), quality thresholds
+   - All hardcoded physics values now use centralized constants for consistency
+   - Constants properly documented with references and usage context
 
 vertical bread crumbs on how far we are in the analysis (scrolling)
 

@@ -3,6 +3,7 @@ import { EquipmentProfile, CameraSpecs } from './Equipment.types';
 import { RootState } from '../../index';
 import { EquipmentMutations, EquipmentMutationTypes } from './Equipment.mutations';
 import { IEquipmentState } from './Equipment.state';
+import { calculatePixelScale, calculateFieldOfView } from '../../../utilities/computations';
 
 export enum EquipmentActionTypes {
   CREATE_PROFILE = 'CREATE_PROFILE',
@@ -67,13 +68,16 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
 
     // Calculate pixel scale if telescope and camera are provided
     if (profile.telescope.focalLength && profile.imagingCamera.pixelSize) {
-      newProfile.pixelScale = (profile.imagingCamera.pixelSize * 206.265) / profile.telescope.focalLength;
+      newProfile.pixelScale = calculatePixelScale(
+        profile.imagingCamera.pixelSize, 
+        profile.telescope.focalLength
+      );
 
       // Calculate field of view
       const pixelScale = newProfile.pixelScale;
       newProfile.fieldOfView = {
-        width: (profile.imagingCamera.width * pixelScale) / 60, // arcminutes
-        height: (profile.imagingCamera.height * pixelScale) / 60 // arcminutes
+        width: calculateFieldOfView(profile.imagingCamera.width, pixelScale),
+        height: calculateFieldOfView(profile.imagingCamera.height, pixelScale)
       };
     }
 
@@ -187,13 +191,16 @@ export const equipmentActions: ActionTree<IEquipmentState, RootState> & Equipmen
 
     // Calculate pixel scale if telescope and camera are provided
     if (profile.telescope.focalLength && profile.imagingCamera.pixelSize) {
-      newProfile.pixelScale = (profile.imagingCamera.pixelSize * 206.265) / profile.telescope.focalLength;
+      newProfile.pixelScale = calculatePixelScale(
+        profile.imagingCamera.pixelSize, 
+        profile.telescope.focalLength
+      );
 
       // Calculate field of view
       const pixelScale = newProfile.pixelScale;
       newProfile.fieldOfView = {
-        width: (profile.imagingCamera.width * pixelScale) / 60, // arcminutes
-        height: (profile.imagingCamera.height * pixelScale) / 60 // arcminutes
+        width: calculateFieldOfView(profile.imagingCamera.width, pixelScale),
+        height: calculateFieldOfView(profile.imagingCamera.height, pixelScale)
       };
     }
 

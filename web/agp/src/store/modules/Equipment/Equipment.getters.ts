@@ -2,6 +2,11 @@ import { GetterTree } from 'vuex';
 import { EquipmentProfile, TelescopeSpecs, CameraSpecs, MountSpecs } from './Equipment.types';
 import { RootState } from '../../index';
 import { IEquipmentState } from './Equipment.state';
+import { 
+  calculateTheoreticalResolution, 
+  calculateSamplingRatio,
+  calculateGuidingAccuracyTarget
+} from '../../../utilities/computations';
 
 export enum EquipmentGetterTypes {
   ALL_PROFILES = 'ALL_PROFILES',
@@ -109,9 +114,7 @@ export const equipmentGetters: GetterTree<IEquipmentState, RootState> & Equipmen
     const telescope = getters[EquipmentGetterTypes.ACTIVE_TELESCOPE];
     if (!telescope) return null;
 
-    // Dawes limit in arcseconds: 4.56 / aperture_in_inches
-    const apertureInches = telescope.aperture / 25.4;
-    return 4.56 / apertureInches;
+    return calculateTheoreticalResolution(telescope.aperture);
   },
 
   [EquipmentGetterTypes.SAMPLING_RATIO]: (state, getters): number | null => {
@@ -120,15 +123,13 @@ export const equipmentGetters: GetterTree<IEquipmentState, RootState> & Equipmen
 
     if (!pixelScale || !resolution) return null;
 
-    // Nyquist sampling ratio (should be around 2.0 for optimal sampling)
-    return pixelScale / (resolution / 2);
+    return calculateSamplingRatio(pixelScale, resolution);
   },
 
   [EquipmentGetterTypes.GUIDING_ACCURACY_TARGET]: (state, getters): number | null => {
     const pixelScale = getters[EquipmentGetterTypes.ACTIVE_PIXEL_SCALE];
     if (!pixelScale) return null;
 
-    // Target guiding accuracy: 1/3 of pixel scale for sharp stars
-    return pixelScale / 3;
+    return calculateGuidingAccuracyTarget(pixelScale);
   }
 };

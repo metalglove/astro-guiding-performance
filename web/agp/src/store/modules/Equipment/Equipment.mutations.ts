@@ -1,6 +1,7 @@
 import { MutationTree } from 'vuex';
 import { EquipmentProfile } from './Equipment.types';
 import { IEquipmentState } from './Equipment.state';
+import { calculatePixelScale, calculateFieldOfView } from '../../../utilities/computations';
 
 export enum EquipmentMutationTypes {
   ADD_PROFILE = 'ADD_PROFILE',
@@ -39,10 +40,10 @@ export const equipmentMutations: MutationTree<IEquipmentState> & EquipmentMutati
         const camera = updates.imagingCamera || existingProfile.imagingCamera;
 
         if (telescope.focalLength && camera.pixelSize) {
-          updatedProfile.pixelScale = (camera.pixelSize * 206.265) / telescope.focalLength;
+          updatedProfile.pixelScale = calculatePixelScale(camera.pixelSize, telescope.focalLength);
           updatedProfile.fieldOfView = {
-            width: (camera.width * updatedProfile.pixelScale) / 60,
-            height: (camera.height * updatedProfile.pixelScale) / 60
+            width: calculateFieldOfView(camera.width, updatedProfile.pixelScale),
+            height: calculateFieldOfView(camera.height, updatedProfile.pixelScale)
           };
         }
       }

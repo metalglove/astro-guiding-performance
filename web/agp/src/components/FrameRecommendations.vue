@@ -275,9 +275,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { GuidingSession, GuidingFrame } from '../store/modules/PHD/PHD.types';
-import { ASIAIRLog, ExposureEvent } from '../store/modules/ASIAIR/ASIAIR.types';
+import { ASIAIRLog } from '../store/modules/ASIAIR/ASIAIR.types';
 import { useEquipmentStore } from '../store';
 import { EquipmentGetterTypes } from '../store/modules/Equipment/Equipment.getters';
+import { calculatePixelScale, QUALITY_THRESHOLDS, DEFAULT_SNR_THRESHOLD } from '../utilities/computations';
 
 interface Props {
   guidingSession: GuidingSession;
@@ -292,7 +293,6 @@ const equipmentStore = useEquipmentStore();
 
 // Get active profile and camera specifications
 const activeProfile = computed(() => equipmentStore.getters(EquipmentGetterTypes.ACTIVE_PROFILE) as any);
-const presetCameras = computed(() => equipmentStore.getters(EquipmentGetterTypes.PRESET_CAMERAS) as any[]);
 
 // Default to active profile's imaging camera, fallback to ASI 2600 MM Pro specs
 const imagingCameraSpecs = computed(() => {
@@ -319,11 +319,8 @@ const imagingPixelScale = computed(() => {
   // Get focal length from active equipment profile or fallback to 800mm
   const telescopeFocalLength = activeProfile.value?.telescope?.focalLength ?? 800; // mm
   
-  // Calculate pixel scale: (pixel size in μm × 206265) / focal length in mm
-  const effectivePixelSize = specs.pixelSize * effectiveBinning;
-  const pixelScale = (effectivePixelSize * 206265) / telescopeFocalLength;
-  
-  return pixelScale / 1000; // Convert from milliarcsec to arcsec
+  // Calculate pixel scale using standard astronomical formula
+  return calculatePixelScale(specs.pixelSize, telescopeFocalLength, effectiveBinning);
 });
 
 // State
@@ -333,13 +330,13 @@ const showAllSnr = ref(false);
 const showAllQuality = ref(false);
 
 // Analysis thresholds (in arcseconds based on imaging camera pixel scale)
-const largeErrorThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * 3 : 2.0); // 3 pixels or 2 arcsec
-const jumpThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * 2 : 1.5); // 2 pixels or 1.5 arcsec
-const snrThreshold = 10; // SNR threshold
+const largeErrorThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * QUALITY_THRESHOLDS.LARGE_ERROR : 2.0);
+const jumpThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * QUALITY_THRESHOLDS.JUMP_DETECTION : 1.5);
+const snrThreshold = DEFAULT_SNR_THRESHOLD;
 
 // Quality thresholds based on pixel-well analysis for imaging camera
-const perfectThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * 0.5 : null); // 0.5 pixels
-const goodThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * 1.0 : null); // 1.0 pixels
+const perfectThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * QUALITY_THRESHOLDS.PERFECT : null);
+const goodThreshold = computed(() => imagingPixelScale.value ? imagingPixelScale.value * QUALITY_THRESHOLDS.GOOD : null);
 
 // Helper function to calculate total error for a frame using imaging camera pixel scale
 const calculateFrameError = (frame: GuidingFrame): number => {
