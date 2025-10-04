@@ -12,6 +12,11 @@ validate whether the equipment functionality works updating and changing profile
 
 for the cdf, note that we filter the data points to only show relevant data points < 2" below the chart
 
+✅ the auto focus events, the first event should pad the empty space because there is no change in position
+   - Fixed AutofocusTimeline.vue to always show "Position Change" field for consistent layout
+   - First event now shows "Initial Position" instead of being hidden
+   - Added appropriate styling with initial-position class
+
 ✅ no more hard coded equipments, it should select it from the currently active profile.
    - Fixed PHDLogGuidingCharts.vue hardcoded pixel scale calculations
    - Fixed ChartStatistics.vue hardcoded telescope focal length and camera database

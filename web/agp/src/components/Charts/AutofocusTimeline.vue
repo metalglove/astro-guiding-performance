@@ -66,7 +66,7 @@
                     <span class="detail-label">V-Curve Points:</span>
                     <span class="detail-value">{{ event.vCurveMeasurements?.length || 0 }}</span>
                   </div>
-                  <div v-if="event.focusPosition > 0 && index > 0" class="detail-item">
+                  <div v-if="event.focusPosition > 0" class="detail-item">
                     <span class="detail-label">Position Change:</span>
                     <span class="detail-value" :class="getPositionChangeClass(event, index)">
                       {{ getPositionChange(event, index) }}
@@ -242,7 +242,8 @@ const getEventBadgeClass = (event: AutoFocusEvent) => {
 };
 
 const getPositionChange = (event: AutoFocusEvent, index: number) => {
-  if (index === 0 || event.focusPosition <= 0) return 'N/A';
+  if (index === 0) return 'Initial Position';
+  if (event.focusPosition <= 0) return 'N/A';
   
   const previousEvent = props.autoFocusEvents[index - 1];
   if (previousEvent.focusPosition <= 0) return 'N/A';
@@ -252,7 +253,8 @@ const getPositionChange = (event: AutoFocusEvent, index: number) => {
 };
 
 const getPositionChangeClass = (event: AutoFocusEvent, index: number) => {
-  if (index === 0 || event.focusPosition <= 0) return '';
+  if (index === 0) return 'initial-position';
+  if (event.focusPosition <= 0) return '';
   
   const previousEvent = props.autoFocusEvents[index - 1];
   if (previousEvent.focusPosition <= 0) return '';
@@ -641,6 +643,11 @@ onBeforeUnmount(() => {
 
 .minimal-change {
   color: var(--text-muted);
+}
+
+.initial-position {
+  color: #6366f1;
+  font-style: italic;
 }
 
 .vcurve-quality {
