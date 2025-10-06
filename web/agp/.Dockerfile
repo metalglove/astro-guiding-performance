@@ -1,16 +1,16 @@
-FROM node:16.2-alpine as build
+FROM node:16.2-alpine AS build
 
 WORKDIR /app
 
 COPY package.json .
-COPY yarn.lock .
+COPY package-lock.json .
 
-RUN yarn install --production
+RUN npm ci
 
 COPY . .
-RUN yarn build
+RUN npm run build
 
-FROM nginx:stable-alpine as production
+FROM nginx:stable-alpine AS production
 
 RUN mkdir /app
 
