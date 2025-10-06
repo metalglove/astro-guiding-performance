@@ -1,0 +1,11 @@
+services:
+  agp-dev:
+    environment:
+      - VUE_APP_API_URL=http://localhost:8080
+      - VUE_APP_ENV=development
+    volumes:
+      - ./web/agp/src:/app/src
+      - ./web/agp/public:/app/public
+      - ./web/agp/package.json:/app/package.json
+      - ./web/agp/tsconfig.json:/app/tsconfig.json
+      - ./web/agp/babel.config.js:/app/babel.config.js
