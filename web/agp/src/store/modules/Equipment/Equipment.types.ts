@@ -1,4 +1,4 @@
-interface TelescopeSpecs {
+export interface TelescopeSpecs {
   id: string;
   name: string;
   type: 'newtonian' | 'refractor' | 'schmidt-cassegrain' | 'maksutov' | 'ritchey-chretien' | 'other';
@@ -11,7 +11,7 @@ interface TelescopeSpecs {
   notes?: string;
 }
 
-interface CameraSpecs {
+export interface CameraSpecs {
   id: string;
   name: string;
   type: 'imaging' | 'guiding';
@@ -29,7 +29,7 @@ interface CameraSpecs {
   notes?: string;
 }
 
-interface MountSpecs {
+export interface MountSpecs {
   id: string;
   name: string;
   manufacturer: string;
@@ -40,7 +40,7 @@ interface MountSpecs {
   notes?: string;
 }
 
-interface AccessorySpecs {
+export interface AccessorySpecs {
   id: string;
   name: string;
   type: 'filter-wheel' | 'focuser' | 'field-flattener' | 'reducer' | 'other';
@@ -68,4 +68,4 @@ interface EquipmentProfile {
   updatedAt: Date;
 }
 
-export { EquipmentProfile, TelescopeSpecs, CameraSpecs, MountSpecs, AccessorySpecs };
+export { EquipmentProfile };

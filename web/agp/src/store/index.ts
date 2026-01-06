@@ -21,6 +21,11 @@ import { IEquipmentState, EquipmentStore, equipmentStore } from './modules/Equip
 import { EquipmentActions, EquipmentActionTypes } from './modules/Equipment/Equipment.actions';
 import { EquipmentGetters, EquipmentGetterTypes } from './modules/Equipment/Equipment.getters';
 import { EquipmentMutations, EquipmentMutationTypes } from './modules/Equipment/Equipment.mutations';
+
+import { ISimulatorState, SimulatorStore, simulatorStore } from './modules/Simulator';
+import { SimulatorActions, SimulatorActionTypes } from './modules/Simulator/Simulator.actions';
+import { SimulatorGetters, SimulatorGetterTypes } from './modules/Simulator/Simulator.getters';
+import { SimulatorMutations, SimulatorMutationTypes } from './modules/Simulator/Simulator.mutations';
 // No need to import specific types - they're inferred from ReturnType<Getters[T]>
 
 export interface RootState {
@@ -28,6 +33,7 @@ export interface RootState {
   phd: IPHDState;
   asiair: IASIAIRState;
   equipment: IEquipmentState;
+  simulator: ISimulatorState;
   [key: string]: any;
 }
 
@@ -35,7 +41,8 @@ export type RootStore =
   AppStore<Pick<RootState, 'app'>> &
   PHDStore<Pick<RootState, 'phd'>> &
   ASIAIRStore<Pick<RootState, 'asiair'>> &
-  EquipmentStore<Pick<RootState, 'equipment'>>;
+  EquipmentStore<Pick<RootState, 'equipment'>> &
+  SimulatorStore<Pick<RootState, 'simulator'>>;
 
 export const rootStore = createStore({
   modules: {
@@ -43,6 +50,7 @@ export const rootStore = createStore({
     phd: phdStore,
     asiair: asiairStore,
     equipment: equipmentStore,
+    simulator: simulatorStore,
   }
 });
 
@@ -101,6 +109,13 @@ interface EquipmentStoreInterface {
   state: IEquipmentState;
 }
 
+interface SimulatorStoreInterface {
+  getters<T extends SimulatorGetterTypes>(getterType: T): T extends keyof SimulatorGetters ? ReturnType<SimulatorGetters[T]> : any;
+  dispatch(actionType: SimulatorActionTypes, payload?: any): Promise<any>;
+  commit(mutationType: SimulatorMutationTypes, payload?: any): void;
+  state: ISimulatorState;
+}
+
 export function useAppStore(): AppStoreInterface {
   const store = vuexUseStore(rootStoreKey);
   return rootStoreToNamespacedStore<AppActionTypes, AppActions, AppMutationTypes, AppMutations, AppGetterTypes, AppGetters, IAppState>('app', store);
@@ -119,4 +134,9 @@ export function useASIAIRStore(): ASIAIRStoreInterface {
 export function useEquipmentStore(): EquipmentStoreInterface {
   const store = vuexUseStore(rootStoreKey);
   return rootStoreToNamespacedStore<EquipmentActionTypes, EquipmentActions, EquipmentMutationTypes, EquipmentMutations, EquipmentGetterTypes, EquipmentGetters, IEquipmentState>('equipment', store);
+}
+
+export function useSimulatorStore(): SimulatorStoreInterface {
+  const store = vuexUseStore(rootStoreKey);
+  return rootStoreToNamespacedStore<SimulatorActionTypes, SimulatorActions, SimulatorMutationTypes, SimulatorMutations, SimulatorGetterTypes, SimulatorGetters, ISimulatorState>('simulator', store);
 }

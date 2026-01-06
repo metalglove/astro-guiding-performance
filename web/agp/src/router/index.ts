@@ -22,6 +22,11 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Methodology',
     component: () => import(/* webpackChunkName: "methodology" */ '../views/Methodology.vue'),
   },
+  {
+    path: '/telescope-sim',
+    name: 'TelescopeSimulator',
+    component: () => import(/* webpackChunkName: "telescope-sim" */ '../views/TelescopeSimulator.vue'),
+  },
 ];
 
 const router = createRouter({
