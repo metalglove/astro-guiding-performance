@@ -10,7 +10,7 @@ RUN npm ci
 COPY . .
 
 # Expose port
-EXPOSE 8080
+EXPOSE 5173
 
 # Start development server with hot reload
-CMD ["npm", "run", "serve"]
+CMD ["npm", "run", "dev"]
