@@ -164,7 +164,7 @@ Example for ASI 2600 MM Pro (3.76μm pixels) with 800mm Newtonian:
 - **Charts**: Chart.js with custom CDF enhancements
 - **State Management**: Vuex for application state
 - **Styling**: Custom CSS with CSS variables for theming
-- **Build Tool**: Vue CLI with modern JavaScript features
+- **Build Tool**: Vite with modern JavaScript features
 
 ### Key Components
 
@@ -211,18 +211,18 @@ cd web/agp
 # Install dependencies
 npm install
 
-# Start development server (Note: OpenSSL legacy provider required for Node.js 17+)
-NODE_OPTIONS="--openssl-legacy-provider" npm run serve
+# Start development server
+npm run dev
 
 # Application will be available at:
-# - Local: http://localhost:8080/
-# - Network: http://[your-ip]:8080/
+# - Local: http://localhost:5173/
+# - Network: http://[your-ip]:5173/
 ```
 
 ### Building for Production
 ```bash
 # Build optimized production bundle
-NODE_OPTIONS="--openssl-legacy-provider" npm run build
+npm run build
 
 # Output will be in the 'dist/' directory
 ```
@@ -230,9 +230,9 @@ NODE_OPTIONS="--openssl-legacy-provider" npm run build
 ### Package Dependencies Status
 - **Vue.js**: 3.2.31 (stable, TypeScript compatible)
 - **Chart.js**: 3.7.1 with vue-chart-3 wrapper
-- **TypeScript**: 4.1.6 (Vue CLI 4.x compatible)
-- **Vue CLI**: 4.5.19 (legacy OpenSSL provider required)
-- **Security**: 101 minor vulnerabilities remaining (dev dependencies, non-critical)
+- **TypeScript**: 5.0.0 (modern version)
+- **Vite**: 7.3.0 (fast build tool)
+- **Security**: 0 vulnerabilities
 
 For detailed package update information, see [PACKAGE_UPDATES.md](PACKAGE_UPDATES.md).
 
