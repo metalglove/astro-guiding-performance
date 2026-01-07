@@ -42,7 +42,7 @@
     </div>
 
     <!-- Main Simulator Content -->
-    <template v-else>
+    <div v-else>
       <div class="simulator-header">
         <h1 class="simulator-title">
           <span class="title-icon">🔭</span>
@@ -135,13 +135,13 @@
       <div class="playback-controls-card">
         <h3>Playback Controls</h3>
         <div class="controls">
-          <button @click="stepBackward" :disabled="currentFrameIndex === 0" class="control-btn">
+          <button @click="stepBackward" :disabled="is3DLoading || !threeDReady || currentFrameIndex === 0" class="control-btn">
             ⏮ Step Back
           </button>
-          <button @click="togglePlayPause" class="control-btn play-pause">
+          <button @click="togglePlayPause" :disabled="is3DLoading || !threeDReady" class="control-btn play-pause">
             {{ isPlaying ? '⏸ Pause' : '▶️ Play' }}
           </button>
-          <button @click="stepForward" :disabled="currentFrameIndex >= frameCount - 1" class="control-btn">
+          <button @click="stepForward" :disabled="is3DLoading || !threeDReady || currentFrameIndex >= frameCount - 1" class="control-btn">
             Step Forward ⏭
           </button>
         </div>
@@ -153,6 +153,7 @@
             :min="0"
             :max="frameCount - 1"
             class="timeline-slider"
+            :disabled="is3DLoading || !threeDReady"
           />
           <div class="timeline-labels">
             <span>{{ currentFrameIndex + 1 }} / {{ frameCount }}</span>
@@ -167,30 +168,94 @@
             :key="speed"
             @click="setPlaybackSpeed(speed)"
             :class="['speed-btn', { active: playbackSpeed === speed }]"
+            :disabled="is3DLoading || !threeDReady"
           >
             {{ speed }}x
           </button>
         </div>
       </div>
 
-      <!-- Placeholder for future visualizations -->
-      <div class="visualizations-placeholder">
-        <div class="placeholder-card">
-          <h3>3D Telescope View</h3>
-          <p>Coming in Phase 4: Three.js 3D visualization of mount orientation</p>
+      <!-- 3D Telescope Visualization -->
+      <div class="telescope-3d-view">
+        <div class="view-header">
+          <h3>3D Telescope Position</h3>
+          <div class="view-controls">
+          <label class="control-label">
+            <input type="checkbox" v-model="showEquipmentModels" :disabled="is3DLoading || !threeDReady" />
+            Show Equipment Models
+          </label>
+          <select v-model="selectedMountModel" class="model-select" :disabled="is3DLoading || !threeDReady">
+            <option value="generic">Generic Mount</option>
+            <option value="celestron-avx">Celestron AVX</option>
+            <option value="skywatcher-heq5">Sky-Watcher HEQ5</option>
+            <option value="ioptron-cem26">iOptron CEM26</option>
+          </select>
+
+          <div class="camera-view-toggle">
+            <button
+              @click="toggleCameraView"
+              :disabled="is3DLoading || !threeDReady"
+              class="camera-toggle-btn"
+              :class="{ active: cameraViewMode === 'imaging' }"
+            >
+              <span class="view-icon">{{ cameraViewMode === 'ground' ? '🌍' : '📷' }}</span>
+              <span class="view-label">
+                {{ cameraViewMode === 'ground' ? 'Ground' : 'Camera' }} View
+              </span>
+              <span class="view-badge">{{ cameraViewMode === 'ground' ? 'External Observer' : 'Guide Camera' }}</span>
+            </button>
+          </div>
         </div>
-        <div class="placeholder-card">
-          <h3>2D Sky Chart</h3>
-          <p>Coming in Phase 3: Star field with FOV overlay</p>
+        </div>
+        <div ref="threeContainer" class="three-container">
+          <div v-if="is3DLoading" class="three-loading">
+            <div class="three-loading-spinner"></div>
+            <p class="three-loading-text">Initializing 3D Renderer...</p>
+          </div>
+
+          <div v-else-if="threeDError" class="three-error">
+            <div class="three-error-icon">⚠️</div>
+            <p class="three-error-text">Failed to initialize 3D view</p>
+            <p class="three-error-detail">{{ threeDError }}</p>
+            <button @click="retry3DInit" class="three-retry-btn">Retry</button>
+          </div>
+        </div>
+        <div class="view-info">
+          <div class="info-item">
+            <span class="info-label">RA:</span>
+            <span class="info-value">{{ currentFrame?.ra.toFixed(2) }}°</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Dec:</span>
+            <span class="info-value">{{ currentFrame?.dec.toFixed(2) }}°</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Hour Angle:</span>
+            <span class="info-value">{{ currentFrame?.hourAngle.toFixed(2) }} hr</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Pier Side:</span>
+            <span class="info-value">{{ currentFrame?.pierSide }}</span>
+          </div>
         </div>
       </div>
-    </template>
+
+      <!-- Polar Alignment Analysis -->
+      <PolarAlignment
+        v-if="sessionMetadata && currentFrame"
+        :guiding-frames="allFrames"
+        :pixel-scale="sessionMetadata.pixelScale"
+        :latitude="52.0"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { useSimulatorStore } from '@/store';
 import { usePHDStore, useASIAIRStore, useAppStore } from '@/store';
 import { SimulatorGetterTypes } from '@/store/modules/Simulator/Simulator.getters';
@@ -203,6 +268,8 @@ import { ASIAIRActionTypes } from '@/store/modules/ASIAIR/ASIAIR.actions';
 import { AppActionTypes } from '@/store/modules/App/App.actions';
 import PHDLogReader from '@/services/PHDLogReader';
 import ASIAIRLogReader from '@/services/ASIAIRLogReader';
+import { createGenericMount, TelescopeGroups } from '@/utilities/telescope/TelescopeModel';
+import PolarAlignment from '@/components/Charts/PolarAlignment.vue';
 
 const router = useRouter();
 const simulatorStore = useSimulatorStore();
@@ -214,6 +281,35 @@ const isLoadingExample = ref(false);
 const loadingMessage = ref('Preparing session data...');
 const animationFrameId = ref<number | null>(null);
 const selectedSessionIndex = ref(0);
+
+// 3D View refs
+const threeContainer = ref<HTMLDivElement | null>(null);
+const showEquipmentModels = ref(true);
+const selectedMountModel = ref('generic');
+const is3DLoading = ref(true);
+const threeDReady = ref(false);
+const threeDError = ref<string | null>(null);
+const cameraViewMode = ref<'ground' | 'imaging'>('ground');
+const telescopePointingInfo = ref({ ra: 0, dec: 0, targetName: '' });
+
+// Three.js objects
+let scene: THREE.Scene;
+let camera: THREE.PerspectiveCamera;
+let renderer: THREE.WebGLRenderer;
+let controls: OrbitControls;
+let mountGroup: THREE.Group;
+let telescopeGroups: TelescopeGroups;
+let animationId: number;
+let frameCount3D = 0;
+
+// Scene views
+let groundScene: THREE.Scene;
+let groundCamera: THREE.PerspectiveCamera;
+let groundRenderer: THREE.WebGLRenderer;
+let groundControls: OrbitControls;
+let telescopeViewGroup: THREE.Group;
+let imagingCamera: THREE.PerspectiveCamera;
+let pointingIndicator: THREE.Mesh;
 
 // Computed properties from store
 const isLoading = computed(() => simulatorStore.getters(SimulatorGetterTypes.GET_IS_LOADING));
@@ -232,6 +328,11 @@ const asiairLog = computed(() => asiairStore.getters(ASIAIRGetterTypes.GET_ASIAI
 
 const showNoDataState = computed(() => !filesUploaded.value && frameCount.value === 0);
 
+const allFrames = computed(() => {
+  const session = phdLog.value?.guidingSessions?.[selectedSessionIndex.value];
+  return session?.guidingFrames || [];
+});
+
 // Local state for scrubber
 const currentFrameIndex = computed({
   get: () => simulatorStore.state.currentFrameIndex,
@@ -240,26 +341,126 @@ const currentFrameIndex = computed({
   },
 });
 
-// Lifecycle
+  // Lifecycle
 onMounted(async () => {
+  console.log("onMounted called");
+  console.log("showNoDataState:", showNoDataState.value);
+  console.log("isLoading:", isLoading.value);
+  console.log("error:", error.value);
+
   if (filesUploaded.value && phdLog.value) {
     await initializeSimulator();
   }
+
+  window.addEventListener('resize', onWindowResize);
 });
+
+// Camera View Management
+function toggleCameraView() {
+  console.log("Switching camera view mode:", cameraViewMode.value);
+  cameraViewMode.value = cameraViewMode.value === 'ground' ? 'imaging' : 'ground';
+}
+
+function getGuideCameraWorldPosition(): THREE.Vector3 {
+  if (!telescopeGroups || !telescopeGroups.guideCamera) {
+    return new THREE.Vector3(0, 2.5, 0);
+  }
+  const worldPosition = new THREE.Vector3();
+  telescopeGroups.guideCamera.getWorldPosition(worldPosition);
+  return worldPosition;
+}
+
+function updateImagingCamera() {
+  if (!telescopeGroups || !telescopeGroups.telescopeAssemblyGroup || !imagingCamera) return;
+  const guideCamPos = getGuideCameraWorldPosition();
+  imagingCamera.position.copy(guideCamPos);
+  imagingCamera.quaternion.copy(telescopeGroups.raAxisGroup.quaternion);
+}
+
+function createPointingIndicator() {
+  // Placeholder for Phase 3 - shows telescope pointing direction
+  const cone = new THREE.Mesh(
+    new THREE.ConeGeometry(0.1, 0.3, 16, 1, true),
+    new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+  );
+  cone.rotation.x = Math.PI / 2; // Point forward
+  scene.add(cone);
+  return cone;
+}
+
+function setupCameraViews() {
+  // Ground view - external observer (use existing scene, camera, renderer, controls)
+  // The main scene, camera, renderer, and controls serve as the ground view
+  groundScene = scene;
+  groundCamera = camera;
+  groundRenderer = renderer;
+  groundControls = controls;
+
+  // Camera view - from guide camera perspective
+  const aspectRatio = (threeContainer.value?.clientWidth || 600) / (threeContainer.value?.clientHeight || 800);
+  imagingCamera = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000);
+  imagingCamera.position.set(0, 2.5, 0);
+
+  // Create pointing indicator
+  pointingIndicator = createPointingIndicator();
+}
 
 onUnmounted(() => {
   if (animationFrameId.value) {
     cancelAnimationFrame(animationFrameId.value);
   }
+  cleanupThreeJS();
   simulatorStore.dispatch(SimulatorActionTypes.PAUSE);
 });
 
-// Watch for playback state changes
+// Watch for when 3D container should be available
+watch([showNoDataState, isLoading, error], async ([noData, loading, err]) => {
+  await nextTick();
+
+  if ((noData || loading || err) && scene) {
+    console.log("Leaving active state, cleaning up Three.js");
+    cleanupThreeJS();
+  }
+
+  if (!noData && !loading && !err && threeContainer.value && !scene) {
+    console.log("Container now available, initializing Three.js...");
+    console.log("threeContainer.value:", threeContainer.value);
+    console.log("Container dimensions:", threeContainer.value.clientWidth, threeContainer.value.clientHeight);
+    initThreeJS();
+  }
+}, { immediate: false });
+
+// Watch for 3D model changes
+watch(showEquipmentModels, () => {
+  if (!scene || !telescopeGroups) return;
+  updateMountModel();
+});
+
+watch(selectedMountModel, () => {
+  if (!scene || !telescopeGroups) return;
+  updateMountModel();
+});
+
+// Watch for frame changes to update telescope position
+watch(currentFrame, () => {
+  if (!telescopeGroups || !telescopeGroups.raAxisGroup || !telescopeGroups.decAxisGroup || !telescopeGroups.telescopeAssemblyGroup) return;
+  updateTelescopePosition();
+});
+
 watch(isPlaying, (playing) => {
   if (playing) {
     startAnimationLoop();
   } else {
     stopAnimationLoop();
+  }
+});
+
+// Watch for camera view mode changes
+watch(cameraViewMode, () => {
+  console.log("Camera view mode changed to:", cameraViewMode.value);
+  // Update imaging camera immediately when switching to imaging view
+  if (cameraViewMode.value === 'imaging' && imagingCamera) {
+    updateImagingCamera();
   }
 });
 
@@ -284,29 +485,24 @@ function goToHome() {
 async function loadExampleData() {
   isLoadingExample.value = true;
   try {
-    // Load example files
     const phdResponse = await fetch('/data/PHD2_GuideLog_2022-03-18_210258.txt');
     const asiairResponse = await fetch('/data/Autorun_Log_2022-03-18_211302.txt');
 
     const phdText = await phdResponse.text();
     const asiairText = await asiairResponse.text();
 
-    // Parse logs
     const phdLogReader = new PHDLogReader();
     const asiairLogReader = new ASIAIRLogReader();
 
     const parsedPHDLog = phdLogReader.parseText(phdText);
     const parsedASIAIRLog = asiairLogReader.parseText(asiairText);
 
-    // Set in stores
     await phdStore.dispatch(PHDActionTypes.SET_PHD_LOG, parsedPHDLog);
     await asiairStore.dispatch(ASIAIRActionTypes.SET_ASIAIR_LOG, parsedASIAIRLog);
     await appStore.dispatch(AppActionTypes.SET_FILES_UPLOADED, true);
 
-    // Reset session index for new data
     selectedSessionIndex.value = 0;
 
-    // Initialize simulator
     await initializeSimulator();
   } catch (error) {
     console.error('Error loading example data:', error);
@@ -349,7 +545,7 @@ function setPlaybackSpeed(speed: number) {
 }
 
 function startAnimationLoop() {
-  const frameDelay = 1000 / (30 * playbackSpeed.value); // Target 30fps at 1x
+  const frameDelay = 1000 / (30 * playbackSpeed.value);
   let lastTime = performance.now();
 
   const animate = (currentTime: number) => {
@@ -363,7 +559,6 @@ function startAnimationLoop() {
       simulatorStore.dispatch(SimulatorActionTypes.STEP_FORWARD);
       lastTime = currentTime;
 
-      // Stop at end
       if (currentFrameIndex.value >= frameCount.value - 1) {
         simulatorStore.dispatch(SimulatorActionTypes.PAUSE);
         return;
@@ -383,7 +578,243 @@ function stopAnimationLoop() {
   }
 }
 
-// Formatters
+function initThreeJS() {
+  console.log("Initializing Three.js scene");
+  is3DLoading.value = true;
+  threeDReady.value = false;
+  threeDError.value = null;
+
+  if (!threeContainer.value) {
+    console.error("Three.js container not available");
+    threeDError.value = "Container element not found";
+    is3DLoading.value = false;
+    return;
+  }
+  console.log("Three.js container found, initializing...");
+  console.log("Container clientWidth:", threeContainer.value.clientWidth);
+  console.log("Container clientHeight:", threeContainer.value.clientHeight);
+
+  try {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0a0a0a);
+    console.log("Scene created");
+
+    const aspectRatio = (threeContainer.value.clientWidth || 600) / (threeContainer.value.clientHeight || 800);
+    camera = new THREE.PerspectiveCamera(50, aspectRatio, 0.1, 1000);
+    camera.position.set(4, 3, 4);
+    camera.lookAt(0, 2.0, 0);
+    console.log("Camera created and positioned");
+
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    console.log("WebGLRenderer created");
+
+    const width = threeContainer.value.clientWidth || 600;
+    const height = threeContainer.value.clientHeight || 800;
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    console.log("Appending renderer to container...");
+    threeContainer.value.appendChild(renderer.domElement);
+    console.log("Renderer created and appended to container");
+
+    const rendererCanvas = renderer.domElement;
+    console.log("Canvas width:", rendererCanvas.width);
+    console.log("Canvas height:", rendererCanvas.height);
+
+    try {
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.minDistance = 2;
+      controls.maxDistance = 10;
+      controls.target.set(0, 2.0, 0);
+      console.log("OrbitControls initialized");
+    } catch (controlsError) {
+      console.error("Failed to initialize OrbitControls:", controlsError);
+    }
+
+    // Setup dual camera view system
+    setupCameraViews();
+    console.log("Dual camera view system initialized");
+
+    const ambientLight = new THREE.AmbientLight(0x404040, 0.4);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(10, 10, 5);
+    directionalLight.castShadow = true;
+    scene.add(directionalLight);
+
+    const planeGeometry = new THREE.PlaneGeometry(20, 20);
+    const planeMaterial = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
+    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    plane.rotation.x = -Math.PI / 2;
+    plane.receiveShadow = true;
+    scene.add(plane);
+
+    mountGroup = new THREE.Group();
+    scene.add(mountGroup);
+
+    updateMountModel();
+
+    console.log("Animation started");
+    animate();
+
+    is3DLoading.value = false;
+    threeDReady.value = true;
+    console.log("3D Renderer ready!");
+  } catch (error) {
+    console.error("Error initializing Three.js:", error);
+    threeDError.value = error instanceof Error ? error.message : 'Unknown error';
+    is3DLoading.value = false;
+  }
+}
+
+function updateMountModel() {
+  if (!mountGroup || !scene) {
+    console.log("Mount group or scene not initialized");
+    return;
+  }
+
+  if (!showEquipmentModels.value) {
+    while (mountGroup.children.length > 0) {
+      mountGroup.remove(mountGroup.children[0]);
+    }
+    return;
+  }
+
+  telescopeGroups = createGenericMount(mountGroup, scene);
+}
+
+function updateTelescopePosition() {
+  if (!currentFrame.value || !telescopeGroups || !telescopeGroups.raAxisGroup || !telescopeGroups.decAxisGroup || !telescopeGroups.telescopeAssemblyGroup) return;
+
+  const ra = (currentFrame.value.ra * Math.PI) / 180;
+  const dec = (currentFrame.value.dec * Math.PI) / 180;
+
+  telescopeGroups.raAxisGroup.rotation.y = ra;
+  telescopeGroups.telescopeAssemblyGroup.rotation.x = -dec;
+}
+
+function animate() {
+  animationId = requestAnimationFrame(animate);
+
+  updateTelescopePosition();
+
+  if (cameraViewMode.value === 'ground') {
+    // Ground view - external observer
+    if (groundControls) {
+      groundControls.update();
+    }
+    if (renderer && scene && camera) {
+      renderer.render(scene, camera);
+    }
+  } else {
+    // Camera view - from guide camera perspective
+    updateImagingCamera();
+    if (pointingIndicator && telescopeGroups) {
+      const guideCamPos = getGuideCameraWorldPosition();
+      pointingIndicator.position.copy(guideCamPos);
+      pointingIndicator.quaternion.copy(telescopeGroups.raAxisGroup.quaternion);
+    }
+    if (renderer && scene && imagingCamera) {
+      renderer.render(scene, imagingCamera);
+    }
+  }
+
+  frameCount3D++;
+  if (frameCount3D % 60 === 0) {
+    console.log("3D Animation running, frame:", frameCount3D, "mode:", cameraViewMode.value);
+  }
+}
+
+function cleanupThreeJS() {
+  if (animationId) {
+    cancelAnimationFrame(animationId);
+  }
+
+  // Cleanup pointing indicator
+  if (pointingIndicator && scene) {
+    scene.remove(pointingIndicator);
+    pointingIndicator.geometry.dispose();
+    if (Array.isArray(pointingIndicator.material)) {
+      pointingIndicator.material.forEach(m => m.dispose());
+    } else {
+      pointingIndicator.material.dispose();
+    }
+    pointingIndicator = null as any;
+  }
+
+  // Cleanup imaging camera
+  imagingCamera = null as any;
+
+  // Cleanup controls
+  if (controls) {
+    controls.dispose();
+  }
+  if (groundControls && groundControls !== controls) {
+    groundControls.dispose();
+  }
+
+  // Cleanup renderer and DOM
+  if (renderer && threeContainer.value) {
+    threeContainer.value.removeChild(renderer.domElement);
+    renderer.dispose();
+  }
+  if (groundRenderer && groundRenderer !== renderer && threeContainer.value) {
+    threeContainer.value.removeChild(groundRenderer.domElement);
+    groundRenderer.dispose();
+  }
+
+  // Clear scene
+  if (scene) {
+    scene.clear();
+  }
+
+  // Clear references
+  scene = null as any;
+  camera = null as any;
+  renderer = null as any;
+  controls = null as any;
+  mountGroup = null as any;
+  telescopeGroups = null as any;
+
+  groundScene = null as any;
+  groundCamera = null as any;
+  groundRenderer = null as any;
+  groundControls = null as any;
+  telescopeViewGroup = null as any;
+
+  window.removeEventListener('resize', onWindowResize);
+}
+
+function onWindowResize() {
+  if (!camera || !renderer || !threeContainer.value) return;
+
+  const width = threeContainer.value.clientWidth || 600;
+  const height = threeContainer.value.clientHeight || 400;
+
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+
+  // Update imaging camera aspect ratio if it exists
+  if (imagingCamera) {
+    imagingCamera.aspect = width / height;
+    imagingCamera.updateProjectionMatrix();
+  }
+
+  renderer.setSize(width, height);
+  console.log("3D Renderer resized to:", width, "x", height);
+}
+
+function retry3DInit() {
+  console.log("Retrying 3D initialization...");
+  threeDError.value = null;
+  initThreeJS();
+}
+
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -403,7 +834,6 @@ function formatTimestamp(date: Date): string {
   padding: 2rem 1rem;
 }
 
-/* No Data State */
 .no-data-state {
   display: flex;
   align-items: center;
@@ -465,7 +895,6 @@ function formatTimestamp(date: Date): string {
   cursor: not-allowed;
 }
 
-/* Loading/Error States */
 .loading-state,
 .error-state {
   display: flex;
@@ -495,7 +924,6 @@ function formatTimestamp(date: Date): string {
   animation: none;
 }
 
-/* Header */
 .simulator-header {
   margin-bottom: 2rem;
 }
@@ -512,7 +940,32 @@ function formatTimestamp(date: Date): string {
   color: var(--text-muted);
 }
 
-/* Cards */
+.session-selector-card {
+  background: var(--white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.session-selector-card h3 {
+  margin-bottom: 1rem;
+  color: var(--gray-800);
+}
+
+.selector-wrapper {
+  margin-bottom: 1rem;
+}
+
+.session-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  background: var(--white);
+  font-size: 1rem;
+}
+
 .session-info-card,
 .current-frame-card,
 .playback-controls-card,
@@ -556,7 +1009,6 @@ function formatTimestamp(date: Date): string {
   color: var(--gray-900);
 }
 
-/* Playback Controls */
 .controls {
   display: flex;
   gap: 1rem;
@@ -656,27 +1108,189 @@ function formatTimestamp(date: Date): string {
   border-color: var(--primary-color);
 }
 
-/* Visualizations Placeholder */
-.visualizations-placeholder {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 1.5rem;
+.telescope-3d-view {
+  background: var(--white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
-.placeholder-card {
-  min-height: 300px;
+.view-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.view-header h3 {
+  margin: 0;
+  color: var(--gray-800);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.view-header h3::after {
+  content: "🖱️ Drag to rotate • Scroll to zoom";
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-left: 0.5rem;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .view-header h3::after {
+    display: inline;
+  }
+}
+
+.view-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.control-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--gray-700);
+  cursor: pointer;
+}
+
+.model-select {
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  background: var(--white);
+  font-size: 0.875rem;
+}
+
+.three-container {
+  width: 100%;
+  height: 800px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: var(--gray-100);
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.three-container canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.three-loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border: 2px dashed var(--gray-300);
-  background: var(--gray-50);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gray-100);
+  z-index: 10;
 }
 
-.placeholder-card p {
+.three-loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid var(--gray-300);
+  border-top: 4px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+.three-loading-text {
   color: var(--text-muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.three-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--gray-100);
+  z-index: 10;
+  padding: 2rem;
   text-align: center;
-  padding: 0 2rem;
+}
+
+.three-error-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.three-error-text {
+  color: var(--gray-800);
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+}
+
+.three-error-detail {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin: 0 0 1rem 0;
+}
+
+.three-retry-btn {
+  padding: 0.5rem 1.5rem;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--primary-color);
+  color: var(--white);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.three-retry-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.view-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.view-info .info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--gray-50);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-200);
+}
+
+.info-label {
+  font-weight: 600;
+  color: var(--gray-700);
+  font-size: 0.875rem;
+}
+
+.info-value {
+  font-family: 'Courier New', monospace;
+  color: var(--primary-color);
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
@@ -690,10 +1304,6 @@ function formatTimestamp(date: Date): string {
 
   .controls {
     flex-direction: column;
-  }
-
-  .visualizations-placeholder {
-    grid-template-columns: 1fr;
   }
 }
 </style>
