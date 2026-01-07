@@ -27,6 +27,16 @@ const routes: Array<RouteRecordRaw> = [
     name: 'TelescopeSimulator',
     component: () => import(/* webpackChunkName: "telescope-sim" */ '../views/TelescopeSimulator.vue'),
   },
+  {
+    path: '/multi-session',
+    name: 'MultiSession',
+    component: () => import(/* webpackChunkName: "multi-session" */ '../components/Charts/MultiSessionComparison.vue'),
+  },
+  {
+    path: '/session-planning',
+    name: 'SessionPlanning',
+    component: () => import(/* webpackChunkName: "session-planning" */ '../views/SessionPlanning.vue'),
+  },
 ];
 
 const router = createRouter({

@@ -20,6 +20,8 @@
             <router-link to="/" class="nav-link" @click="closeMobileMenu">Home</router-link>
             <router-link to="/phd" class="nav-link" @click="closeMobileMenu">PHD Analysis</router-link>
             <router-link to="/telescope-sim" class="nav-link" @click="closeMobileMenu">Telescope Simulator</router-link>
+            <router-link to="/session-planning" class="nav-link" @click="closeMobileMenu">Session Planning</router-link>
+            <router-link to="/multi-session" class="nav-link" @click="closeMobileMenu">Multi-Session</router-link>
             <router-link to="/equipment" class="nav-link" @click="closeMobileMenu">Equipment</router-link>
             <router-link to="/methodology" class="nav-link" @click="closeMobileMenu">Methodology</router-link>
           </nav>

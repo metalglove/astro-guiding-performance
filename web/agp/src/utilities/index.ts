@@ -4,5 +4,6 @@
  * Central export point for all utility functions and constants.
  */
 
+export * from './astronomy';
 export * from './computations';
 export * from './constants';
