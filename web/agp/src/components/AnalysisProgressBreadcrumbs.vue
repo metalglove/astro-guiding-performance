@@ -1,54 +1,40 @@
 <template>
   <div class="analysis-progress" :class="{ 'collapsed': isCollapsed }">
-    <div class="progress-header" @click="toggleCollapsed">
-      <span class="progress-icon">📋</span>
-      <span v-if="!isCollapsed" class="progress-title">Analysis Progress</span>
-      <button class="collapse-toggle" :class="{ 'collapsed': isCollapsed }">
-        <span class="toggle-icon">{{ isCollapsed ? '→' : '←' }}</span>
-      </button>
-    </div>
-    
-    <div v-show="!isCollapsed" class="progress-content">
-      <div class="progress-steps">
-        <div
-          v-for="step in analysisSteps"
-          :key="step.id"
-          class="progress-step"
-          :class="{
-            'completed': step.completed,
-            'active': step.active,
-            'in-view': step.inView
-          }"
-          @click="scrollToSection(step.id)"
-        >
-          <div class="step-indicator">
-            <span v-if="step.completed" class="step-check">✓</span>
-            <span v-else-if="step.active" class="step-active">●</span>
-            <span v-else class="step-number">{{ step.order }}</span>
-          </div>
-          
-          <div class="step-content">
-            <div class="step-title">{{ step.title }}</div>
-            <div class="step-description">{{ step.description }}</div>
-            <div v-if="step.active && step.progress < 100" class="step-progress">
-              <div class="step-progress-bar">
-                <div 
-                  class="step-progress-fill" 
-                  :style="{ width: `${step.progress}%` }"
-                ></div>
-              </div>
-              <span class="step-progress-text">{{ Math.round(step.progress) }}%</span>
-            </div>
-          </div>
-        </div>
+    <!-- Toggle Button -->
+    <button @click="toggleCollapsed" class="collapse-toggle" aria-label="Toggle progress view">
+      <span class="toggle-icon">{{ isCollapsed ? '▶' : '◀' }}</span>
+    </button>
+
+    <!-- Progress Header -->
+    <div class="progress-header">
+      <h3 class="progress-title">Analysis Progress</h3>
+      <div class="progress-summary">
+        {{ completedSteps.length }} of {{ analysisSteps.length }} sections completed
       </div>
-      
-      <div class="overall-progress">
-        <div class="overall-progress-text">
-          Overall Progress: {{ Math.round(overallProgress) }}%
+    </div>
+
+    <!-- Progress Steps -->
+    <div class="progress-steps">
+      <div
+        v-for="step in analysisSteps"
+        :key="step.id"
+        :id="`breadcrumb-${step.id}`"
+        class="progress-step"
+        :class="{ 'completed': step.completed, 'active': step.active, 'in-view': step.inView }"
+      >
+        <div class="step-indicator">
+          <div class="step-number">{{ step.order }}</div>
+          <div v-if="step.completed" class="step-check">✓</div>
         </div>
-        <div class="completed-sections">
-          {{ completedSteps.length }} of {{ analysisSteps.length }} sections completed
+        <div class="step-content">
+          <div class="step-title">{{ step.title }}</div>
+          <div class="step-description">{{ step.description }}</div>
+          <div v-if="step.active" class="step-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: step.progress + '%' }"></div>
+            </div>
+            <div class="progress-text">{{ Math.round(step.progress) }}% complete</div>
+          </div>
         </div>
       </div>
     </div>
@@ -67,7 +53,6 @@ interface AnalysisStep {
   active: boolean;
   inView: boolean;
   progress: number;
-  element?: HTMLElement | null;
 }
 
 const isCollapsed = ref(false);
@@ -125,10 +110,20 @@ const analysisSteps = ref<AnalysisStep[]>([
     progress: 0
   },
   {
+    id: 'drift-analysis',
+    title: 'Drift Analysis',
+    description: 'Drift patterns and stability metrics',
+    order: 6,
+    completed: false,
+    active: false,
+    inView: false,
+    progress: 0
+  },
+  {
     id: 'guiding-charts',
     title: 'Guiding Charts',
     description: 'Time series, scatter, and CDF plots',
-    order: 6,
+    order: 7,
     completed: false,
     active: false,
     inView: false,
@@ -138,7 +133,7 @@ const analysisSteps = ref<AnalysisStep[]>([
     id: 'additional-analysis',
     title: 'Environmental Data',
     description: 'Temperature and focus analysis',
-    order: 7,
+    order: 8,
     completed: false,
     active: false,
     inView: false,
@@ -155,139 +150,100 @@ const overallProgress = computed(() => {
   const completedCount = completedSteps.value.length;
   const activeStep = analysisSteps.value.find(step => step.active && !step.completed);
   
-  let progress = 0;
-  
-  if (activeStep && activeStep.progress > 0) {
-    // Add completed steps + partial progress of active step
-    progress = ((completedCount + (activeStep.progress / 100)) / totalSteps) * 100;
-  } else {
-    // Only count completed steps
-    progress = (completedCount / totalSteps) * 100;
+  if (completedCount === totalSteps) {
+    return 100;
   }
   
-  // Ensure progress never exceeds 100%
-  return Math.min(progress, 100);
+  const baseProgress = (completedCount / totalSteps) * 100;
+  const activeProgress = activeStep ? (activeStep.progress / totalSteps) : 0;
+  
+  return Math.min(100, baseProgress + activeProgress);
 });
+
+const activeStep = computed(() => 
+  analysisSteps.value.find(step => step.active && !step.completed)
+);
+
+// Intersection Observer for scroll-based progress tracking
+let observer: IntersectionObserver | null = null;
+
+const initScrollTracking = () => {
+  const stepElements = analysisSteps.value.map(step => 
+    document.getElementById(step.id)
+  ).filter(el => el !== null) as HTMLElement[];
+
+  if (stepElements.length === 0) return;
+
+  observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        const stepId = entry.target.id;
+        const step = analysisSteps.value.find(s => s.id === stepId);
+        
+        if (step) {
+          step.inView = entry.isIntersecting;
+          
+          if (entry.isIntersecting) {
+            // Calculate progress based on element position in viewport
+            const rect = entry.boundingClientRect;
+            const windowHeight = window.innerHeight;
+            const elementTop = rect.top;
+            const elementHeight = rect.height;
+            
+            // Progress based on how much of the element is visible
+            const visibleTop = Math.max(0, -elementTop);
+            const visibleBottom = Math.min(windowHeight, elementTop + elementHeight);
+            const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+            
+            step.progress = (visibleHeight / elementHeight) * 100;
+            
+            // Mark as active if significantly visible
+            if (step.progress > 30 && !step.completed) {
+              step.active = true;
+            }
+            
+            // Mark as completed when fully scrolled past
+            if (elementTop + elementHeight < 0) {
+              step.completed = true;
+              step.active = false;
+            }
+          }
+        }
+      });
+
+      // Update active step (only one should be active at a time)
+      const visibleSteps = analysisSteps.value.filter(step => step.inView && !step.completed);
+      if (visibleSteps.length > 0) {
+        // Set the most visible step as active
+        visibleSteps.forEach(step => step.active = false);
+        const mostVisible = visibleSteps.reduce((prev, current) => 
+          prev.progress > current.progress ? prev : current
+        );
+        mostVisible.active = true;
+      }
+    },
+    {
+      root: null,
+      rootMargin: '-10% 0px -10% 0px',
+      threshold: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    }
+  );
+
+  stepElements.forEach(el => observer?.observe(el));
+};
 
 const toggleCollapsed = () => {
   isCollapsed.value = !isCollapsed.value;
 };
 
-const scrollToSection = (sectionId: string) => {
-  const element = document.getElementById(sectionId) || document.querySelector(`.${sectionId}`);
-  if (element) {
-    element.scrollIntoView({ 
-      behavior: 'smooth', 
-      block: 'start',
-      inline: 'nearest'
-    });
-  }
-};
-
-const updateProgress = () => {
-  const viewportHeight = window.innerHeight;
-  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-  const documentHeight = document.documentElement.scrollHeight;
-  const isAtBottom = scrollTop + viewportHeight >= documentHeight - 10; // 10px tolerance
-  
-  currentScrollY.value = scrollTop;
-  
-  analysisSteps.value.forEach((step, index) => {
-    // Try multiple selectors to find the element
-    let element = document.getElementById(step.id);
-    if (!element) {
-      element = document.querySelector(`.${step.id}`);
-    }
-    // Fallback selectors for specific sections
-    if (!element && step.id === 'charts-section') {
-      element = document.querySelector('.charts-card');
-    }
-    if (!element && step.id === 'guiding-charts') {
-      element = document.querySelector('.charts-section');
-    }
-    
-    step.element = element;
-    
-    if (element) {
-      const rect = element.getBoundingClientRect();
-      const elementTop = rect.top + scrollTop;
-      const elementBottom = elementTop + rect.height;
-      
-      // Check if element is in view
-      step.inView = rect.top < viewportHeight && rect.bottom > 0;
-      
-      // Special handling for the last section when at bottom of page
-      const isLastSection = index === analysisSteps.value.length - 1;
-      
-      // Calculate progress through the section
-      if (scrollTop >= elementTop && scrollTop <= elementBottom) {
-        const progressThroughElement = (scrollTop - elementTop) / rect.height;
-        step.progress = Math.min(Math.max(progressThroughElement * 100, 0), 100);
-        
-        // Mark as completed if we've scrolled past 80% of the element
-        // OR if this is the last section and we're at the bottom of the page
-        if (step.progress > 80 || (isLastSection && isAtBottom)) {
-          step.completed = true;
-          step.active = false; // Completed steps should not be active
-          step.progress = 100;
-        } else {
-          step.active = true;
-          step.completed = false;
-        }
-      } else if (scrollTop > elementBottom) {
-        // Completely past this section
-        step.completed = true;
-        step.active = false;
-        step.progress = 100;
-      } else if (isLastSection && isAtBottom && scrollTop >= elementTop) {
-        // Special case: last section when at bottom but haven't scrolled past it
-        step.completed = true;
-        step.active = false; // Even for last section, completed means not active
-        step.progress = 100;
-      } else {
-        // Haven't reached this section yet
-        step.active = false;
-        step.progress = 0;
-        if (scrollTop < elementTop) {
-          step.completed = false;
-        }
-      }
-    }
-  });
-  
-  // Ensure only one active step at a time
-  const activeSteps = analysisSteps.value.filter(step => step.active);
-  if (activeSteps.length > 1) {
-    // Keep the last active step (most recent), deactivate others
-    for (let i = 0; i < activeSteps.length - 1; i++) {
-      activeSteps[i].active = false;
-    }
-  }
-};
-
-const handleScroll = () => {
-  requestAnimationFrame(updateProgress);
-};
-
 onMounted(() => {
-  // Initial update after a short delay to ensure DOM is ready
-  setTimeout(() => {
-    updateProgress();
-  }, 1000);
-  
-  // Add scroll listener
-  window.addEventListener('scroll', handleScroll, { passive: true });
-  
-  // Update periodically to catch dynamic content changes
-  const interval = setInterval(updateProgress, 2000);
-  
-  onUnmounted(() => {
-    clearInterval(interval);
-  });
+  initScrollTracking();
 });
 
 onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll);
+  if (observer) {
+    observer.disconnect();
+  }
 });
 </script>
 
@@ -295,72 +251,80 @@ onUnmounted(() => {
 .analysis-progress {
   position: fixed;
   top: 50%;
-  right: 2rem;
+  right: 1rem;
   transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 280px;
+  background: var(--white);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 1rem;
   z-index: 1000;
   transition: all 0.3s ease;
-  max-width: 320px;
-  min-width: 280px;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .analysis-progress.collapsed {
-  min-width: 60px;
-  max-width: 60px;
-}
-
-.progress-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-.progress-icon {
-  font-size: 1.5rem;
-  margin-right: 0.5rem;
-}
-
-.progress-title {
-  font-weight: 600;
-  color: var(--gray-800);
-  flex-grow: 1;
+  width: 60px;
+  padding: 1rem 0.5rem;
 }
 
 .collapse-toggle {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
   background: none;
   border: none;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
   color: var(--gray-600);
+  padding: 0.25rem;
+  border-radius: var(--border-radius-sm);
+  transition: var(--transition);
 }
 
 .collapse-toggle:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--gray-100);
   color: var(--gray-800);
 }
 
 .toggle-icon {
-  font-size: 1rem;
-  font-weight: bold;
+  display: inline-block;
+  transition: transform 0.3s ease;
 }
 
-.progress-content {
-  padding: 1rem;
+.analysis-progress.collapsed .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.progress-header {
+  margin-bottom: 1rem;
+}
+
+.analysis-progress.collapsed .progress-header {
+  display: none;
+}
+
+.progress-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 0.25rem;
+}
+
+.progress-summary {
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
 
 .progress-steps {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
+}
+
+.analysis-progress.collapsed .progress-steps {
+  display: none;
 }
 
 .progress-step {
@@ -368,198 +332,176 @@ onUnmounted(() => {
   align-items: flex-start;
   gap: 0.75rem;
   padding: 0.75rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.progress-step:hover {
-  background: rgba(102, 126, 234, 0.1);
-  border-color: rgba(102, 126, 234, 0.2);
-}
-
-.progress-step.active {
-  background: rgba(102, 126, 234, 0.15);
-  border-color: rgba(102, 126, 234, 0.3);
+  border-radius: var(--border-radius);
+  border: 2px solid var(--gray-200);
+  background: var(--gray-50);
+  transition: var(--transition);
 }
 
 .progress-step.completed {
-  background: rgba(34, 197, 94, 0.1);
-  border-color: rgba(34, 197, 94, 0.2);
+  border-color: var(--success-color);
+  background: var(--success-light);
+}
+
+.progress-step.active {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
+  box-shadow: var(--shadow);
 }
 
 .progress-step.in-view {
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+  border-color: var(--warning-color);
+  background: var(--warning-light);
 }
 
 .step-indicator {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
+  position: relative;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  background: var(--gray-200);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 600;
-  background: rgba(0, 0, 0, 0.1);
   color: var(--gray-600);
-  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
 }
 
 .progress-step.completed .step-indicator {
-  background: #22c55e;
-  color: white;
+  background: var(--success-color);
+  color: var(--white);
 }
 
 .progress-step.active .step-indicator {
-  background: #667eea;
-  color: white;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  background: var(--primary-color);
+  color: var(--white);
 }
 
 .step-check {
-  font-size: 1rem;
-}
-
-.step-active {
-  font-size: 0.5rem;
-}
-
-.step-number {
-  font-size: 0.75rem;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--white);
+  font-weight: bold;
 }
 
 .step-content {
-  flex-grow: 1;
+  flex: 1;
   min-width: 0;
 }
 
 .step-title {
   font-weight: 600;
   color: var(--gray-800);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.125rem;
   font-size: 0.875rem;
 }
 
 .step-description {
   color: var(--gray-600);
   font-size: 0.75rem;
-  line-height: 1.4;
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
 }
 
 .step-progress {
   margin-top: 0.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 
-.step-progress-bar {
-  flex-grow: 1;
+.progress-bar {
+  width: 100%;
   height: 4px;
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--gray-200);
   border-radius: 2px;
   overflow: hidden;
+  margin-bottom: 0.25rem;
 }
 
-.step-progress-fill {
+.progress-fill {
   height: 100%;
-  background: #667eea;
+  background: var(--primary-color);
   border-radius: 2px;
   transition: width 0.3s ease;
 }
 
-.step-progress-text {
-  font-size: 0.625rem;
-  color: var(--gray-600);
-  font-weight: 600;
-  min-width: 32px;
-}
-
-.overall-progress {
-  margin-top: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.overall-progress-text {
-  font-weight: 600;
-  color: var(--gray-800);
-  margin-bottom: 0.25rem;
-  font-size: 0.875rem;
-}
-
-.completed-sections {
-  color: var(--gray-600);
+.progress-text {
   font-size: 0.75rem;
+  color: var(--gray-600);
+  text-align: right;
 }
 
-/* Responsive Design */
+.analysis-progress.collapsed {
+  right: -220px;
+}
+
+.analysis-progress.collapsed:hover {
+  right: 1rem;
+}
+
 @media (max-width: 1024px) {
   .analysis-progress {
-    right: 1rem;
-    max-width: 280px;
-    min-width: 240px;
-  }
-  
-  .analysis-progress.collapsed {
-    min-width: 50px;
-    max-width: 50px;
-  }
-}
-
-@media (max-width: 768px) {
-  .analysis-progress {
-    position: fixed;
+    position: static;
     top: auto;
-    bottom: 2rem;
-    right: 1rem;
-    left: 1rem;
+    right: auto;
     transform: none;
-    max-width: none;
-    min-width: auto;
+    width: 100%;
+    max-height: none;
+    margin-bottom: 2rem;
+    order: -1;
   }
-  
+
   .analysis-progress.collapsed {
-    left: auto;
-    right: 1rem;
-    min-width: 50px;
-    max-width: 50px;
+    right: auto;
+    width: 100%;
   }
-  
+
+  .analysis-progress.collapsed:hover {
+    right: auto;
+  }
+
+  .collapse-toggle {
+    display: none;
+  }
+
   .progress-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 0.75rem;
   }
-  
+
   .progress-step {
     padding: 0.5rem;
   }
+
+  .step-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+  }
+
+  .step-description {
+    flex: 1;
+    margin-bottom: auto;
+  }
 }
 
-@media (max-width: 480px) {
-  .analysis-progress {
-    bottom: 1rem;
-    right: 0.5rem;
-    left: 0.5rem;
+@media (max-width: 640px) {
+  .progress-steps {
+    grid-template-columns: 1fr;
   }
-  
-  .progress-content {
-    padding: 0.75rem;
-  }
-}
 
-/* Print styles */
-@media print {
-  .analysis-progress {
-    display: none;
+  .progress-step {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .step-indicator {
+    margin-bottom: 0.5rem;
   }
 }
 </style>

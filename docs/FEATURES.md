@@ -1,6 +1,30 @@
 # Future Features
 
-This document outlines planned future enhancements for the Astro Guiding Performance application. These features are not currently implemented but are documented for future development.
+This document outlines planned future enhancements for the Astro Guiding Performance application. Features marked with ✅ are implemented, ⏳ are planned for future development.
+
+## Recent Updates (Phase 3 - January 2026)
+
+### Phase 3.1: Polar Alignment Indicator ✅ **COMPLETED**
+- Full polar alignment analysis from Dec drift patterns
+- Altitude and azimuth error calculations
+- Quality scoring system (excellent/good/fair/poor)
+- Interactive correction guide with actionable recommendations
+- Integrated into Telescope Simulator view
+
+### Phase 3.2: Session Planning & Target Visibility ✅ **COMPLETED**
+- Complete astronomical calculation utilities (Julian Date, LST, Alt/Az transformations)
+- Target visibility calculator with altitude over time
+- Messier catalog database (22 popular deep-sky objects)
+- Meridian flip prediction algorithm
+- SessionPlanning.vue component with target browser
+- Moon phase calculator and integration
+- Navigation route `/session-planning` added
+
+### Phase 3.3: Star Field Rendering ⏳ **DEFERRED**
+- Star catalog integration (Hipparcos/Tycho-2)
+- Deep sky object rendering
+- Realistic night sky visualization
+- Integration with imaging camera view
 
 ## Table of Contents
 - [Telescope Simulator Enhancements](#telescope-simulator-enhancements)
@@ -13,6 +37,134 @@ This document outlines planned future enhancements for the Astro Guiding Perform
 ---
 
 ## Telescope Simulator Enhancements
+
+### 3D Visualization Enhancements
+**Priority**: High
+**Complexity**: Medium
+**Description**: Enhanced 3D telescope view with responsive design, camera switching, and multiple viewing perspectives.
+
+**Features**:
+
+#### 1. Responsive Container
+- **Adaptive Sizing**: Container height automatically adjusts to screen size (2x standard height)
+- **Breakpoints**:
+  - Mobile: Full viewport height (minimum 400px)
+  - Tablet: 800px base height
+  - Desktop: 800px base height
+- **Aspect Ratio**: Maintains proper 16:10 or 4:3 proportions
+
+#### 2. Dual Camera Views
+- **Ground View** (Default):
+  - External observer perspective
+  - See entire telescope setup from outside
+  - Camera positioned at eye level (~1.7m high)
+  - OrbitControls enabled for interactive exploration
+
+- **Camera/Imaging View**: ✅ **IMPLEMENTED**
+  - View from guide camera perspective
+  - Shows what telescope is actually pointing at in sky
+  - Camera positioned at guide camera location on telescope
+  - Camera orientation matches telescope pointing direction
+  - Helpful for understanding framing and star field
+
+- **View Toggle**: ✅ **IMPLEMENTED**
+  - Easy switching between Ground and Camera views
+  - Shows current view mode indicator (Ground/Camera badges)
+  - Camera view button in view controls section
+  - Real-time camera switching in animation loop
+
+#### 3. Camera View Rendering (What Telescope Sees)
+- **Concept**: Simulate camera view of night sky
+- **Current Implementation**: ✅ **PARTIALLY IMPLEMENTED**
+  - Camera view mode functional (switches perspective)
+  - Imaging camera positioned at guide camera location
+  - Camera orientation synced with telescope pointing
+  - Pointing indicator (green cone) tracks telescope direction
+  - **Phase 3 TODO**: Star field rendering with accurate deep sky objects
+- **Position Indicator**: ✅ **IMPLEMENTED**
+  - Green cone mesh showing telescope pointing direction
+  - Updates in real-time as telescope moves
+  - Visible in both ground and imaging views
+  - **Phase 3 TODO**: Display target object names, RA/Dec overlay
+- **Future Starry Background** (Phase 3):
+  - Accurate star catalogs (Tycho-2, Hipparcos, GAIA)
+  - Deep sky objects (Messier, NGC, IC nebulae, galaxies)
+  - Proper magnitude scaling
+  - Coordinate transformations for alt/az to RA/Dec
+  - Interactive star selection and information
+  - Realistic Milky Way band
+
+**Technical Implementation**:
+```typescript
+// Camera view state
+const cameraViewMode = ref<'ground' | 'imaging'>('ground');
+
+function setupCameraViews() {
+  // Ground view - external observer
+  const groundCamera = new THREE.PerspectiveCamera(50, aspect, 0.1, 1000);
+  groundCamera.position.set(4, 3, 4);
+  groundCamera.lookAt(0, 2, 0);
+  
+  // Camera view - from guide camera perspective
+  const imagingCamera = new THREE.PerspectiveCamera(60, aspect, 0.1, 1000);
+  function updateImagingCamera() {
+    const guideCamPos = getGuideCameraWorldPosition();
+    imagingCamera.position.copy(guideCamPos);
+    imagingCamera.quaternion.copy(telescopeGroups.raAxisGroup.quaternion);
+  }
+  
+  // Camera view pointing indicator
+  function createPointingIndicator() {
+    const cone = new THREE.Mesh(
+      new THREE.ConeGeometry(0.1, 0.3, 1, 16),
+      new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.5 })
+    );
+    scene.add(cone);
+    return cone;
+  }
+}
+
+// Responsive container sizing
+function updateContainerSize() {
+  if (!threeContainer.value) return;
+  
+  const baseHeight = 800;
+  const screenHeight = window.innerHeight;
+  
+  let targetHeight: number;
+  if (screenHeight < 600) {
+    targetHeight = screenHeight; // Mobile
+  } else if (screenHeight < 900) {
+    targetHeight = 800; // Tablet
+  } else {
+    targetHeight = 800; // Desktop
+  }
+  
+  camera.aspect = threeContainer.value.clientWidth / targetHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(threeContainer.value.clientWidth, targetHeight);
+  threeContainer.value.style.height = `${targetHeight}px`;
+}
+```
+
+**UI Components**:
+- View toggle switch (Ground/Camera) in view header
+- Current view mode indicator badge
+- Responsive container that grows/shrinks with screen
+- "Camera View" label when showing imaging perspective
+- Pointing indicator showing RA/Dec coordinates
+- Loading overlay when transitioning between camera views
+- Starry background placeholder when in Camera view
+
+**Benefits**:
+- More flexible viewing on different devices
+- Better understanding of what telescope actually sees
+- Helps with framing and field of view planning
+- Interactive camera movement for exploring setup
+- Immersive experience from multiple perspectives
+- Foundation for full star field rendering in Phase 3
+
+---
 
 ### Video Export
 **Priority**: Medium
@@ -308,101 +460,107 @@ class EquipmentModelManager {
 
 ## Session Planning & Target Visibility
 
+**Status**: ✅ **PARTIALLY IMPLEMENTED** (Phase 3.2)
 **Priority**: High
 **Complexity**: High
 **Description**: Pre-imaging session planning tool to optimize target selection based on equipment capabilities and sky conditions.
 
-> **Note**: This feature was specifically requested by the user as a future enhancement to help plan capture sessions by determining what targets are visible based on configured equipment.
+> **Note**: Core features completed in Phase 3.2. Multi-target scheduling and equipment compatibility checking remain for future development.
 
-**Features**:
+**Completed Features** (Phase 3.2):
 
-### 1. Target Visibility Calculator
+### 1. Target Visibility Calculator ✅ **IMPLEMENTED**
 - **Input**:
-  - Target catalog (Messier, NGC, IC, custom)
-  - Observer location (lat/lon) and date/time
-  - Equipment constraints (min altitude, meridian flip limits)
+  - ✅ Observer location (lat/lon) and date selection
+  - ✅ Messier catalog targets (22 popular deep-sky objects)
+  - ✅ Equipment constraints (min altitude 30°, airmass < 2.0)
 
 - **Output**:
-  - Altitude and azimuth over night
-  - Transit time (highest altitude)
-  - Visibility window (hours above minimum altitude)
-  - Recommended imaging duration
-  - Meridian flip timing
+  - ✅ Altitude and azimuth calculations
+  - ✅ Transit time (highest altitude during night)
+  - ✅ Visibility window (dark time + best observing window)
+  - ✅ Recommended imaging duration
+  - ✅ Meridian flip timing and hour angle
 
-### 2. Target Database Integration
+### 2. Target Database Integration ✅ **IMPLEMENTED**
 - **Built-in Catalogs**:
-  - Messier objects (M1-M110)
-  - NGC (New General Catalogue)
-  - IC (Index Catalogue)
-  - Popular astrophotography targets
+  - ✅ Messier objects (M1, M8, M13, M16, M17, M20, M27, M31, M33, M42, M45, M51, M57, M63-M66, M81-M82, M101, M104, M106)
+  - ⏳ NGC (New General Catalogue) - Future
+  - ⏳ IC (Index Catalogue) - Future
+  - ✅ Popular astrophotography targets included
 
-- **Custom Targets**:
-  - Add custom coordinates
-  - Import from CSV/JSON
-  - Save favorite lists
+- **Custom Targets**: ⏳ Future Enhancement
+  - ⏳ Add custom coordinates
+  - ⏳ Import from CSV/JSON
+  - ⏳ Save favorite lists
 
-- **Target Information**:
-  - RA/Dec coordinates (J2000)
-  - Object type (galaxy, nebula, cluster, etc.)
-  - Size (angular diameter)
-  - Magnitude
-  - Best imaging months
-  - Suggested exposure times
+- **Target Information**: ✅ **IMPLEMENTED**
+  - ✅ RA/Dec coordinates (J2000)
+  - ✅ Object type (Galaxy, Emission Nebula, Planetary Nebula, Supernova Remnant, Open Cluster, Globular Cluster)
+  - ✅ Size (angular diameter in arcminutes)
+  - ✅ Magnitude (visual magnitude)
+  - ✅ Best imaging season (Winter, Spring, Summer, Fall)
+  - ✅ Difficulty rating (Easy, Moderate, Hard)
+  - ⏳ Suggested exposure times - Future
 
-### 3. Meridian Flip Prediction
+### 3. Meridian Flip Prediction ✅ **IMPLEMENTED**
 - **Analysis**:
-  - Calculate when target crosses meridian
-  - Predict pier flip timing
-  - Estimate guiding interruption
-  - Account for mount-specific flip limits
+  - ✅ Calculate when target crosses meridian
+  - ✅ Predict pier flip timing
+  - ✅ Account for mount-specific flip limits (configurable east/west limits)
+  - ✅ Real-time hour angle calculation
+  - ✅ Safety margin calculations for exposure planning
 
 - **Visualization**:
-  - Show safe imaging window (green)
-  - Warn approaching meridian (yellow)
-  - Alert flip zone (red)
-  - Animate flip process in 3D view
+  - ✅ Show current side of meridian (East/West)
+  - ✅ Display hour angle in real-time
+  - ✅ Warning when flip required
+  - ✅ Next flip time prediction
+  - ⏳ Animate flip process in 3D view - Future
 
-### 4. Multi-Target Optimization
+### 4. Multi-Target Optimization ⏳ **FUTURE ENHANCEMENT**
 - **Scheduler**:
-  - Input: List of desired targets
-  - Optimize: Maximize total imaging time
-  - Output: Recommended sequence and timings
+  - ⏳ Input: List of desired targets
+  - ⏳ Optimize: Maximize total imaging time
+  - ⏳ Output: Recommended sequence and timings
 
 - **Constraints**:
-  - Minimum altitude per target
-  - Setup/meridian flip overhead
-  - Priority weighting
-  - Moon avoidance
+  - ⏳ Minimum altitude per target
+  - ⏳ Setup/meridian flip overhead
+  - ⏳ Priority weighting
+  - ⏳ Moon avoidance
 
-- **Algorithm**: Constraint satisfaction problem (CSP) solver
+- **Algorithm**: ⏳ Constraint satisfaction problem (CSP) solver
 
-### 5. Equipment Compatibility Check
+### 5. Equipment Compatibility Check ⏳ **FUTURE ENHANCEMENT**
 - **FOV Matching**:
-  - Show target size vs camera FOV
-  - Recommend framing (portrait/landscape)
-  - Suggest mosaic panels if target too large
+  - ⏳ Show target size vs camera FOV
+  - ⏳ Recommend framing (portrait/landscape)
+  - ⏳ Suggest mosaic panels if target too large
 
 - **Focal Length Recommendations**:
-  - Warn if target too large (under-sampled)
-  - Warn if target too small (over-sampled)
-  - Suggest focal length adjustments
+  - ⏳ Warn if target too large (under-sampled)
+  - ⏳ Warn if target too small (over-sampled)
+  - ⏳ Suggest focal length adjustments
 
-### 6. Sky Condition Integration
-- **Moon Phase & Position**:
-  - Calculate moon illumination percentage
-  - Show moon altitude during target visibility
-  - Highlight dark time windows
+### 6. Sky Condition Integration ✅ **PARTIALLY IMPLEMENTED**
+- **Moon Phase & Position**: ✅ **IMPLEMENTED**
+  - ✅ Calculate moon illumination percentage
+  - ✅ Show moon phase name (New Moon, Waxing Crescent, etc.)
+  - ✅ Display moon information in session planning view
+  - ⏳ Show moon altitude during target visibility - Future
+  - ✅ Highlight dark time windows (civil twilight)
 
-- **Weather Forecast** (API integration):
-  - Cloud cover forecast (7Timer!, ClearOutside)
-  - Seeing conditions (atmospheric stability)
-  - Transparency (humidity, haze)
-  - Wind speed (guiding impact)
+- **Weather Forecast** (API integration): ⏳ **FUTURE**
+  - ⏳ Cloud cover forecast (7Timer!, ClearOutside)
+  - ⏳ Seeing conditions (atmospheric stability)
+  - ⏳ Transparency (humidity, haze)
+  - ⏳ Wind speed (guiding impact)
 
-- **Light Pollution**:
-  - Light pollution map overlay
-  - Bortle scale integration
-  - Impact on different target types
+- **Light Pollution**: ⏳ **FUTURE**
+  - ⏳ Light pollution map overlay
+  - ⏳ Bortle scale integration
+  - ⏳ Impact on different target types
 
 **Technical Approach**:
 ```typescript
@@ -688,4 +846,4 @@ We welcome community contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for
 
 ---
 
-*Last Updated*: 2026-01-06
+*Last Updated*: 2026-01-07 (Phase 3.2 Session Planning Completed)
