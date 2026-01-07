@@ -8,12 +8,31 @@
 ---
 
 ## Table of Contents
-1. [Communication Patterns](#communication-patterns)
-2. [Task Management System](#task-management-system)
-3. [Documentation Standards](#documentation-standards)
-4. [Subagent Orchestration](#subagent-orchestration)
-5. [Commands Reference](#commands-reference)
-6. [Workflow Examples](#workflow-examples)
+1. [Session Startup](#session-startup)
+2. [Communication Patterns](#communication-patterns)
+3. [Task Management System](#task-management-system)
+4. [Documentation Standards](#documentation-standards)
+5. [Subagent Orchestration](#subagent-orchestration)
+6. [Commands Reference](#commands-reference)
+7. [Workflow Examples](#workflow-examples)
+
+---
+
+## Session Startup
+
+**FIRST ACTION in every new session:**
+
+1. **Read** `docs/SESSION_HISTORY.md` - Quick context on latest work and current state
+2. **Read** `AGENTS.md` - Project-specific agent delegation patterns
+3. **Scan** `docs/FEATURES.md` - Current feature completion status
+4. **Review** latest task files in `docs/tasks/` (if needed for specific context)
+
+**Token Budget**: These files are designed to be token-efficient. Read SESSION_HISTORY.md first (< 1000 tokens) for immediate context.
+
+**Don't read unless needed**:
+- Detailed phase summaries (reference when SESSION_HISTORY mentions them)
+- Individual task files (reference when working on related features)
+- Full codebase exploration (use `explore` agent instead)
 
 ---
 
