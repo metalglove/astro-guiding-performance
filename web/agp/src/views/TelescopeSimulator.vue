@@ -270,6 +270,8 @@ import PHDLogReader from '@/services/PHDLogReader';
 import ASIAIRLogReader from '@/services/ASIAIRLogReader';
 import { createGenericMount, TelescopeGroups } from '@/utilities/telescope/TelescopeModel';
 import PolarAlignment from '@/components/Charts/PolarAlignment.vue';
+import { loadBinaryStarCatalog, StarCatalog } from '@/utilities/starfield/binaryStarLoader';
+import { createStarField, updateStarFieldRotation, disposeStarField } from '@/utilities/starfield/starfieldRenderer';
 
 const router = useRouter();
 const simulatorStore = useSimulatorStore();
@@ -310,6 +312,8 @@ let groundControls: OrbitControls;
 let telescopeViewGroup: THREE.Group;
 let imagingCamera: THREE.PerspectiveCamera;
 let pointingIndicator: THREE.Mesh;
+let starField: THREE.Points | null = null;
+let starCatalog: StarCatalog | null = null;
 
 // Computed properties from store
 const isLoading = computed(() => simulatorStore.getters(SimulatorGetterTypes.GET_IS_LOADING));
@@ -388,21 +392,45 @@ function createPointingIndicator() {
   return cone;
 }
 
-function setupCameraViews() {
-  // Ground view - external observer (use existing scene, camera, renderer, controls)
-  // The main scene, camera, renderer, and controls serve as the ground view
+async function setupCameraViews() {
   groundScene = scene;
   groundCamera = camera;
   groundRenderer = renderer;
   groundControls = controls;
 
-  // Camera view - from guide camera perspective
   const aspectRatio = (threeContainer.value?.clientWidth || 600) / (threeContainer.value?.clientHeight || 800);
   imagingCamera = new THREE.PerspectiveCamera(60, aspectRatio, 0.1, 1000);
   imagingCamera.position.set(0, 2.5, 0);
 
-  // Create pointing indicator
   pointingIndicator = createPointingIndicator();
+
+  await initializeStarField();
+}
+
+async function initializeStarField() {
+  console.log('[StarField] Initializing star field...');
+  
+  try {
+    starCatalog = await loadBinaryStarCatalog('/data/hygdata.bin.gz');
+    console.log(`[StarField] Loaded ${starCatalog.stars.length} stars from HYG binary catalog`);
+    
+    starField = createStarField(starCatalog, {
+      sphereRadius: 500,
+      baseSizeMultiplier: 10,
+      minStarSize: 3,
+      maxStarSize: 40
+    });
+    
+    scene.add(starField);
+    console.log('[StarField] Star field added to scene');
+    
+    if (currentFrame.value) {
+      updateStarFieldRotation(starField, currentFrame.value.ra, currentFrame.value.dec);
+    }
+  } catch (error) {
+    console.error('[StarField] Failed to initialize:', error);
+    throw error;
+  }
 }
 
 onUnmounted(() => {
@@ -703,8 +731,11 @@ function animate() {
 
   updateTelescopePosition();
 
+  if (starField && currentFrame.value) {
+    updateStarFieldRotation(starField, currentFrame.value.ra, currentFrame.value.dec);
+  }
+
   if (cameraViewMode.value === 'ground') {
-    // Ground view - external observer
     if (groundControls) {
       groundControls.update();
     }
@@ -712,7 +743,6 @@ function animate() {
       renderer.render(scene, camera);
     }
   } else {
-    // Camera view - from guide camera perspective
     updateImagingCamera();
     if (pointingIndicator && telescopeGroups) {
       const guideCamPos = getGuideCameraWorldPosition();
@@ -735,7 +765,13 @@ function cleanupThreeJS() {
     cancelAnimationFrame(animationId);
   }
 
-  // Cleanup pointing indicator
+  if (starField && scene) {
+    scene.remove(starField);
+    disposeStarField(starField);
+    starField = null;
+  }
+  starCatalog = null;
+
   if (pointingIndicator && scene) {
     scene.remove(pointingIndicator);
     pointingIndicator.geometry.dispose();
