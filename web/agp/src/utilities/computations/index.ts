@@ -41,3 +41,31 @@ export type { QualityThresholds, FrameQuality } from './quality';
 
 // Constants
 export * from '../constants/physics';
+
+// Drift analysis computations
+export {
+  analyzeDrift,
+  calculateDriftRate,
+  detectBacklashEvents,
+  compareMultipleSessions,
+  generateMultiSessionOverlay,
+  analyzePeriodicError,
+  generatePECTable,
+  estimateWormPeriod
+} from './drift';
+
+export type { DriftAnalysis, DriftVector, BacklashEvent, PeriodicErrorAnalysis } from './drift';
+
+// Polar alignment analysis computations
+export {
+  analyzePolarAlignment,
+  extractDriftPatterns,
+  calculateAlignmentQuality
+} from './polarAlignment';
+
+export type { 
+  PolarAlignmentError,
+  PolarAlignmentCorrection,
+  PolarAlignmentAnalysis,
+  DriftPattern
+} from './polarAlignment';

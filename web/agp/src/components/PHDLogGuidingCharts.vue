@@ -36,6 +36,15 @@
     </div>
 
     <!-- Frame Deletion Recommendations -->
+    <!-- Drift Analysis -->
+    <div id="drift-analysis">
+      <DriftAnalysis
+        :guidingSession="selectedGuidingSession"
+        :asiairLog="asiairLog"
+        :pixelScale="sessionPixelScale || activePixelScale"
+      />
+    </div>
+
     <div id="frame-recommendations">
       <FrameRecommendations
         :guidingSession="selectedGuidingSession"
@@ -93,6 +102,7 @@ import ChartStatistics from './Charts/ChartStatistics.vue';
 import LineChartComponent from './Charts/LineChartComponent.vue';
 import ScatterChartComponent from './Charts/ScatterChartComponent.vue';
 import FrameRecommendations from './FrameRecommendations.vue';
+import DriftAnalysis from './Charts/DriftAnalysis.vue';
 import { calculateRMSStats, calculateMaxError, calculateSessionDuration, sampleData } from '../utilities/computations';
 
 interface ProcessedDataPoint {
